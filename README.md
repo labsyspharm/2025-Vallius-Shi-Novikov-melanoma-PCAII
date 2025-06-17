@@ -26,25 +26,20 @@ Author Last, Author F. (Year). Title of data set (Version number) [Description o
   
 4. **Relevant links:** <remove links that are not relevant>  
 > * Publication DOI: [doi.org/MY-PAPER-DOI](https://doi.org/MY-PAPER-DOI-URL) 
-> * Associated GitHub Repository: [MY-REPO](https://github.com/MY-REPO-URL)  
-> * To view an archived record of this repository: [My-ZENODO-DOI](https://zenodo.org/doi/MY-ZENDODO-DOI-URL) 
+> * Associated GitHub Repository: [MY-REPO](https://github.com/labsyspharm/2025-Vallius-Shi-Novikov-melanoma-PCAII)  
+> * To view an archived record of this repository: [My-ZENODO-DOI](https://zenodo.org/doi/MY-ZENODO-DOI-URL) 
 > * To view the image data online, visit: [My-ATLAS-PAGE](https://tissue-atlas.org/MY-ATLAS-PAGE-URL)
-> * Associated documentation website: [MY-PROJECT-WEBSITE](MY-PROJECT-WEBSITE-URL)  
-> * DOI of other publications that use the data: <If this data is being reused from a past publication, include DOI and APA citation>
-> * <Other important links if applicable>
 ​
 5. **Licenses/restrictions placed on the data:** CC-BY [creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
 ​
 --------------------
 ACCESS THE DATASET 
 --------------------
-<Data should be uploaded to the appropriate public repository where applicable - if you are not sure which repository to use reach out to your Data Manager>
-  
-​
+
 ## File organization:   
 **Each file follows the following naming convention:**    
 ​
-Each folder corresponds to a patient sample (N). <Edit as needed if this folder structure does not fit the needs of your paper> 
+Each folder corresponds to a patient sample (N).
  
 |File Type     | Description                                                                        | Location|
 |--------      | ----------------------------------------------------------------------------------|---------|
@@ -60,8 +55,7 @@ Each folder corresponds to a patient sample (N). <Edit as needed if this folder 
 ​
 ​
 ## AWS Data Access  
-​
-X, Y, Z data is available for download through AWS. 
+Full-resolution CyCIF images, single cell segmentation masks, and cell count tables will be available via AWS.
 ​
 **You will need the following bucket name:**  
 ```
@@ -71,13 +65,19 @@ AWS BUCKET NAME
 *For general instructions on how to download data from AWS, see: [https://zenodo.org/records/10223574](https://zenodo.org/records/10223574)*     
   
 If you experience issues accessing the above AWS S3 buckets, email tissue-atlas(at)hms.harvard.edu with the subject line "bucketname: Data Access".  
+
+## GEO Data Access
+GeoMx gene expression data will be available via the Gene Expression Omnibus (GEO). 
 ​
-## Synapse Library
-​
-X, Y, Z, data is available on Synapse at: [synapse.org/MY-PUBLIC-SYNAPSE-LIBRARY](https://www.synapse.org/MY-PUBLIC-SYNAPSE-LIBRARY)  
-​
-## Other Repository 
-<if applicable>  
+## Other Data Access 
+All images will be available to explore online (via Minerva, no download required) at the Harvard Tissue Atlas (https://www.tissue-atlas.org/).  Selected CyCIF channels for specimen MEL14 can be explored via Minerva at {add link}.
+
+Full-resolution CyCIF images, single cell segmentation masks, and cell count tables will be available via the NCI Human Tumor Atlas Network data portal (https://data.humantumoratlas.org/)​
+
+
+
+
+
 ​
 ## FILE LIST  
 <List all files (or folders, as appropriate for dataset organization) contained in each repository, with a brief description. If you are depositing certain file types into public, standardized repositories that already include a file index & metadata, you can link to that repository instead of listing all individual files. For all other data, (on AWS, etc) list all files. >  
