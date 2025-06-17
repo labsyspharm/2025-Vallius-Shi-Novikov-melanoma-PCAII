@@ -1,4 +1,4 @@
-# Data Access Information
+# **Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma**
 ------------------ 
 TABLE OF CONTENTS
 ------------------
