@@ -1,0 +1,10 @@
+workflow:
+  start-at: quantification 
+  stop-at: quantification
+options:
+  unmicst:  --channel 1  --scalingFactor 0.5
+  s3seg: --area-max 5000 --expand-size 6 --maxima-footprint-size 9 --mean-intensity-min 80
+  mcquant: --masks nucleiRing.ome.tif cellRing.ome.tif cytoRing.ome.tif
+modules:
+  watershed:
+    version: 1.5.1-large
