@@ -18,11 +18,14 @@ GENERAL INFORMATION
 --------------------
 ​
 **Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma** <Publication or Dataset Title>   
-​
-**Authors:** Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+. *#Co-first Authors: T.V., Y.S, E.N.; +Co-Senior Authors: C.G.L., P.K.S.*
-​
-**Please cite this data as the following:**  <Following standard APA citation format - if this data is associated with a publication, this should be the paper citation>    
-Author Last, Author F. (Year). Title of data set (Version number) [Description of form]. Location: Name of producer.    
+-
+**Authors:** Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+.  
+  
+#Co-first Authors: T.V., Y.S., E.N.  
++Co-Senior Authors: C.G.L., P.K.S.  
+​  
+**Please cite this data as the following:**      
+Vallius, T. et al. (2025). Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma. {journal/biorxv}    
 
 **Relevant links:** <remove links that are not relevant>  
 > * Publication DOI: [doi.org/MY-PAPER-DOI](https://doi.org/MY-PAPER-DOI-URL) 
@@ -30,7 +33,7 @@ Author Last, Author F. (Year). Title of data set (Version number) [Description o
 > * To view an archived record of this repository: [My-ZENODO-DOI](https://zenodo.org/doi/MY-ZENODO-DOI-URL) 
 > * To view the image data online, visit: [My-ATLAS-PAGE](https://tissue-atlas.org/MY-ATLAS-PAGE-URL)
 ​
-5. **Licenses/restrictions placed on the data:** CC-BY [creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
+**Licenses/restrictions placed on the data:** CC-BY [creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/)
 ​
 --------------------
 ACCESS THE DATASET 
