@@ -142,4 +142,4 @@ Full-resolution CyCIF images, single cell segmentation masks, and cell count tab
 ADDITIONAL NOTES/COMMENTS
 --------------------------
 ​
-Please let **(Name, contact information)** know if any errors are found in this data.  
+Please contact tissue-atlas(at)hms.harvard.edu if you have any questions related to the data.
