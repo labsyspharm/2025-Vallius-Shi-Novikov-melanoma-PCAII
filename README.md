@@ -17,7 +17,7 @@ TABLE OF CONTENTS
 GENERAL INFORMATION
 --------------------
 ​
-1. **Publication or Dataset title:** <Publication or Dataset Title>   
+1. **Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma** <Publication or Dataset Title>   
 ​
 2. **Authors:** <List; No need to include affiliations.>  
 ​
