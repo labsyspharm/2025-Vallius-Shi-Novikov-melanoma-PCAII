@@ -19,7 +19,7 @@ GENERAL INFORMATION
 ​
 1. **Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma** <Publication or Dataset Title>   
 ​
-2. **Authors: Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+** <List; No need to include affiliations.> *#Co-first Authors: T.V., Y.S, E.N.; +Co-Senior Authors: C.G.L., P.K.S*
+2. **Authors: Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+** *#Co-first Authors: T.V., Y.S, E.N.; +Co-Senior Authors: C.G.L., P.K.S*
 ​
 3. **Please cite this data as the following:**  <Following standard APA citation format - if this data is associated with a publication, this should be the paper citation>    
 Author Last, Author F. (Year). Title of data set (Version number) [Description of form]. Location: Name of producer.    
