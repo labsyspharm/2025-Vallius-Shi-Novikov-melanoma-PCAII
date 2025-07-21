@@ -192,28 +192,95 @@ MEL85/MEL86	| LSP15219.ome.tif	| HTAN, AWS | 375.639 GB |	p135_e9_PCAlineage |
 ​
 ​
 ### H&E Image Data
-​
-|Patient or Biospecimen ID | File Name      | Location| File size|
+|Patient ID | File Name      | Location| File size|
 |--------| ---------------|---------|----------|
-|ID | ID.ome.tif_HE.vsi | AWS     | N.N KB |
-​
+MEL14	|	LSP11311.ome.tif	|	HTAN, AWS	|	17.107 GB	|
+MEL15	|	LSP11319.ome.tif	|	HTAN, AWS	|	5.78 GB	|
+MEL16	|	LSP11327.ome.tif	|	HTAN, AWS	|	8.376 GB	|
+MEL17	|	LSP11335.ome.tif	|	HTAN, AWS	|	2.065 GB	|
+MEL18	|	LSP11343.ome.tif	|	HTAN, AWS	|	4.298 GB	|
+MEL19	|	LSP11351.ome.tif	|	HTAN, AWS	|	2.915 GB	|
+MEL21	|	LSP11367.ome.tif	|	HTAN, AWS	|	3.214 GB	|
+MEL22	|	LSP11375.ome.tif	|	HTAN, AWS	|	18.95 GB	|
+MEL23	|	LSP11383.ome.tif	|	HTAN, AWS	|	10.828 GB	|
+MEL24	|	LSP11391.ome.tif	|	HTAN, AWS	|	3.135 GB	|
+MEL25	|	LSP11399.ome.tif	|	HTAN, AWS	|	3.996 GB	|
+MEL26	|	LSP11407.ome.tif	|	HTAN, AWS	|	3.234 GB	|
+MEL27	|	LSP11415.ome.tif	|	HTAN, AWS	|	9.422 GB	|
+MEL28	|	LSP11423.ome.tif	|	HTAN, AWS	|	6.639 GB	|
+MEL29	|	LSP11431.ome.tif	|	HTAN, AWS	|	387.0 MB	|
+MEL30	|	LSP11439.ome.tif	|	HTAN, AWS	|	4.846 GB	|
+MEL31	|	LSP11447.ome.tif	|	HTAN, AWS	|	2.092 GB	|
+MEL32	|	LSP11455.ome.tif	|	HTAN, AWS	|	7.532 GB	|
+MEL33	|	LSP11463.ome.tif	|	HTAN, AWS	|	7.655 GB	|
+MEL34	|	LSP11471.ome.tif	|	HTAN, AWS	|	2.285 GB	|
+MEL35	|	LSP11479.ome.tif	|	HTAN, AWS	|	8.001 GB	|
+MEL36	|	LSP11487.ome.tif	|	HTAN, AWS	|	2.994 GB	|
+MEL36	|	LSP11495.ome.tif	|	HTAN, AWS	|	1.43 GB	|
+MEL37	|	LSP11503.ome.tif	|	HTAN, AWS	|	6.035 GB	|
+MEL38	|	LSP11511.ome.tif	|	HTAN, AWS	|	14.414 GB	|
+MEL39	|	LSP11519.ome.tif	|	HTAN, AWS	|	1.128 GB	|
+MEL40	|	LSP11527.ome.tif	|	HTAN, AWS	|	3.413 GB	|
+MEL41	|	LSP11535.ome.tif	|	HTAN, AWS	|	3.413 GB	|
+MEL42	|	LSP11543.ome.tif	|	HTAN, AWS	|	10.07 GB	|
+MEL44	|	LSP11559.ome.tif	|	HTAN, AWS	|	2.675 GB	|
+MEL45	|	LSP11567.ome.tif	|	HTAN, AWS	|	2.314 GB	|
+MEL47	|	LSP11583.ome.tif	|	HTAN, AWS	|	2.314 GB	|
+MEL48	|	LSP11591.ome.tif	|	HTAN, AWS	|	4.061 GB	|
+MEL49	|	LSP11599.ome.tif	|	HTAN, AWS	|	5.432 GB	|
+MEL51	|	LSP11615.ome.tif	|	HTAN, AWS	|	3.677 GB	|
+MEL52	|	LSP11623.ome.tif	|	HTAN, AWS	|	6.375 GB	|
+MEL53	|	LSP11631.ome.tif	|	HTAN, AWS	|	8.728 GB	|
+MEL54	|	LSP11639.ome.tif	|	HTAN, AWS	|	18.337 GB	|
+MEL55	|	LSP11655.ome.tif	|	HTAN, AWS	|	6.513 GB	|
+MEL56	|	LSP11663.ome.tif	|	HTAN, AWS	|	2.543 GB	|
+MEL58	|	LSP11687.ome.tif	|	HTAN, AWS	|	7.257 GB	|
+MEL59	|	LSP11695.ome.tif	|	HTAN, AWS	|	3.565 GB	|
+MEL60	|	LSP11703.ome.tif	|	HTAN, AWS	|	3.908 GB	|
+MEL61	|	LSP11711.ome.tif	|	HTAN, AWS	|	17.854 GB	|
+MEL62	|	LSP11719.ome.tif	|	HTAN, AWS	|	1.087 GB	|
+MEL64	|	LSP11735.ome.tif	|	HTAN, AWS	|	7.236 GB	|
+MEL65	|	LSP11743.ome.tif	|	HTAN, AWS	|	5.045 GB	|
+MEL66	|	LSP11751.ome.tif	|	HTAN, AWS	|	1.374 GB	|
+MEL67	|	LSP11759.ome.tif	|	HTAN, AWS	|	4.878 GB	|
+MEL68	|	LSP11767.ome.tif	|	HTAN, AWS	|	3.671 GB	|
+MEL68	|	LSP11775.ome.tif	|	HTAN, AWS	|	6.278 GB	|
+MEL69	|	LSP11783.ome.tif	|	HTAN, AWS	|	4.061 GB	|
+MEL50 	|	LSP12427.ome.tif	|	HTAN, AWS	|	5.525 GB	|
+MEL70	|	LSP13074_20220526_202440_361948.ome.tiff	|	HTAN, AWS	|	19.208 GB	|
+MEL71	|	LSP13082_20220526_202440_397948.ome.tiff	|	HTAN, AWS	|	27.177 GB	|
+MEL72	|	LSP13090_20220526_202440_378948.ome.tiff	|	HTAN, AWS	|	22.75 GB	|
+MEL73	|	LSP13098_20220526_202440_345948.ome.tiff	|	HTAN, AWS	|	19.773 GB	|
+MEL74	|	LSP17553.ome.tif	|	HTAN, AWS	|	4.52 GB	|
+MEL75	|	LSP17557.ome.tif	|	HTAN, AWS	|	6.296 GB	|
+MEL76	|	LSP17561.ome.tif	|	HTAN, AWS	|	2.946 GB	|
+MEL77	|	LSP17565.ome.tif	|	HTAN, AWS	|	4.064 GB	|
+MEL78	|	LSP17569.ome.tif	|	HTAN, AWS	|	3.608 GB	|
+MEL79	|	LSP17573.ome.tif	|	HTAN, AWS	|	2.345 GB	|
+MEL80	|	LSP17577.ome.tif	|	HTAN, AWS	|	1.444 GB	|
+MEL81	|	LSP17581.ome.tif	|	HTAN, AWS	|	1.939 GB	|
+MEL82	|	LSP17585.ome.tif	|	HTAN, AWS	|	6.256 GB	|
+MEL83	|	LSP17589.ome.tif	|	HTAN, AWS	|	3.114 GB	|
+MEL84	|	LSP17593.ome.tif	|	HTAN, AWS	|	1.188 GB	|
+MEL85/MEL86	|	LSP17597.ome.tif	|	HTAN, AWS	|	1.214 GB	|
+
+
 ​
 ### Segmentation Mask Data
-​
-|Patient or Biospecimen ID | File Name      | Location| File size|
-|--------| ---------------|---------|----------|
-|ID | ID.ome.tif_HE.vsi | AWS     | N.N KB |
+|Patient ID | File Name      | Location | File size | CyCIF Panel |
+|--------| ---------------|---------|----------|--------|
+|ID | ID.ome.tif | AWS     | N.N KB |
+
 ​
 
 ### Feature Table Data
-​
-|Patient or Biospecimen ID | File Name   | Synapse ID | File size |
-|------- | ------------|------------|-----------|
+|Patient ID | File Name      | Location | File size | CyCIF Panel |
+|------- | ------------|------------|-----------|-------|
 |ID | ID.csv |  |  |
 ​
-​
-
- 
+​  
+  
+  
 --------------------------
 ADDITIONAL NOTES/COMMENTS
 --------------------------
