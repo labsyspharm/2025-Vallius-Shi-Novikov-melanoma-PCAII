@@ -51,8 +51,8 @@ Each file corresponds to a patient sample (N).
 |N-mask-cell.ome.tif                           | Segmentation mask image                                                            | HTAN, AWS |
 |unmicst-N_cell.csv OR N--unmicst_cellRing.csv | Single-cell feature table, including intensity data for all channels               | HTAN, AWS |
 |N.fastq                                       | Sequencing data                                                                    | GEO       |
-​
-​
+
+
 ## AWS Data Access  
 Full-resolution CyCIF images, single cell segmentation masks, and cell count tables will be available via AWS.
 ​
@@ -79,8 +79,6 @@ Full-resolution CyCIF images, single cell segmentation masks, and cell count tab
 
 ​
 ## FILE LIST  
-<List all files (or folders, as appropriate for dataset organization) contained in each repository, with a brief description. If you are depositing certain file types into public, standardized repositories that already include a file index & metadata, you can link to that repository instead of listing all individual files. For all other data, (on AWS, etc) list all files. >  
-​
 ### CyCIF Image Data
 |Patient ID | File Name        | Location | File size | CyCIF Panel |
 |------------------------- | -----------------|----------|-----------| ----------- |
@@ -269,14 +267,222 @@ MEL85/MEL86	|	LSP17597.ome.tif	|	HTAN, AWS	|	1.214 GB	|
 ### Segmentation Mask Data
 |Patient ID | File Name      | Location | File size | CyCIF Panel |
 |--------| ---------------|---------|----------|--------|
-|ID | ID.ome.tif | AWS     | N.N KB |
+MEL14	|	LSP11314-mask-cell.ome.tif	|	HTAN, AWS	|	14.343 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL14	|	LSP11315-mask-cell.ome.tif	|	HTAN, AWS	|	11.994 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL15	|	LSP11322-mask-cell.ome.tif	|	HTAN, AWS	|	2.233 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL16	|	LSP11330-mask-cell.ome.tif	|	HTAN, AWS	|	9.368 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL16	|	LSP11331-mask-cell.ome.tif	|	HTAN, AWS	|	8.421 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL17	|	LSP11339-mask-cell.ome.tif	|	HTAN, AWS	|	329.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL18	|	LSP11347-mask-cell.ome.tif	|	HTAN, AWS	|	4.832 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL18	|	LSP11349-mask-cell.ome.tif	|	HTAN, AWS	|	4.761 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL19	|	LSP11354-mask-cell.ome.tif	|	HTAN, AWS	|	3.126 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL19	|	LSP11355-mask-cell.ome.tif	|	HTAN, AWS	|	2.578 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL21	|	LSP11371-mask-cell.ome.tif	|	HTAN, AWS	|	2.187 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL21	|	LSP11373-mask-cell.ome.tif	|	HTAN, AWS	|	2.105 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL22	|	LSP11378-mask-cell.ome.tif	|	HTAN, AWS	|	23.788 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL22	|	LSP11379-mask-cell.ome.tif	|	HTAN, AWS	|	19.1 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL23	|	LSP11386-mask-cell.ome.tif	|	HTAN, AWS	|	15.457 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL23	|	LSP11387-mask-cell.ome.tif	|	HTAN, AWS	|	13.218 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL24	|	LSP11394-mask-cell.ome.tif	|	HTAN, AWS	|	2.169 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL24	|	LSP11395-mask-cell.ome.tif	|	HTAN, AWS	|	3.444 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL25	|	LSP11402-mask-cell.ome.tif	|	HTAN, AWS	|	5.203 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL25	|	LSP11403-mask-cell.ome.tif	|	HTAN, AWS	|	5.203 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL26	|	LSP11410-mask-cell.ome.tif	|	HTAN, AWS	|	2.662 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL26	|	LSP11411-mask-cell.ome.tif	|	HTAN, AWS	|	3.165 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL27	|	LSP11418-mask-cell.ome.tif	|	HTAN, AWS	|	8.951 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL27	|	LSP11419-mask-cell.ome.tif	|	HTAN, AWS	|	8.863 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL28	|	LSP11426-mask-cell.ome.tif	|	HTAN, AWS	|	1.074 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL29	|	LSP11435-mask-cell.ome.tif	|	HTAN, AWS	|	333.0 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL30	|	LSP11440-mask-cell.ome.tif	|	HTAN, AWS	|	772.6 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL31	|	LSP11450-mask-cell.ome.tif	|	HTAN, AWS	|	2.415 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL31	|	LSP11451-mask-cell.ome.tif	|	HTAN, AWS	|	2.07 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL32	|	LSP11458-mask-cell.ome.tif	|	HTAN, AWS	|	4.765 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL32	|	LSP11459-mask-cell.ome.tif	|	HTAN, AWS	|	4.225 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL33	|	LSP11466-mask-cell.ome.tif	|	HTAN, AWS	|	3.603 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL33	|	LSP11467-mask-cell.ome.tif	|	HTAN, AWS	|	3.603 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL34	|	LSP11474-mask-cell.ome.tif	|	HTAN, AWS	|	2.87 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL34	|	LSP11475-mask-cell.ome.tif	|	HTAN, AWS	|	2.615 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL35	|	LSP11482-mask-cell.ome.tif	|	HTAN, AWS	|	8.832 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL35	|	LSP11483-mask-cell.ome.tif	|	HTAN, AWS	|	9.434 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL36	|	LSP11490-mask-cell.ome.tif	|	HTAN, AWS	|	2.601 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL36	|	LSP11498-mask-cell.ome.tif	|	HTAN, AWS	|	913.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL37	|	LSP11506-mask-cell.ome.tif	|	HTAN, AWS	|	8.531 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL37	|	LSP11507-mask-cell.ome.tif	|	HTAN, AWS	|	7.618 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL38	|	LSP11514-mask-cell.ome.tif	|	HTAN, AWS	|	4.632 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL38	|	LSP11515-mask-cell.ome.tif	|	HTAN, AWS	|	3.629 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL39	|	LSP11522-mask-cell.ome.tif	|	HTAN, AWS	|	1.34 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL39	|	LSP11523-mask-cell.ome.tif	|	HTAN, AWS	|	744.6 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL40	|	LSP11530-mask-cell.ome.tif	|	HTAN, AWS	|	4.832 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL40	|	LSP11531-mask-cell.ome.tif	|	HTAN, AWS	|	3.444 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL41	|	LSP11538-mask-cell.ome.tif	|	HTAN, AWS	|	3.456 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL42	|	LSP11546-mask-cell.ome.tif	|	HTAN, AWS	|	5.165 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL42	|	LSP11547-mask-cell.ome.tif	|	HTAN, AWS	|	6.297 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL44	|	LSP11562-mask-cell.ome.tif	|	HTAN, AWS	|	1.167 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL44	|	LSP11563-mask-cell.ome.tif	|	HTAN, AWS	|	3.083 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL45	|	LSP11570-mask-cell.ome.tif	|	HTAN, AWS	|	2.615 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL45	|	LSP11571-mask-cell.ome.tif	|	HTAN, AWS	|	2.226 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL47	|	LSP11586-mask-cell.ome.tif	|	HTAN, AWS	|	2.285 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL47	|	LSP11587-mask-cell.ome.tif	|	HTAN, AWS	|	1.601 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL48	|	LSP11594-mask-cell.ome.tif	|	HTAN, AWS	|	2.691 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL48	|	LSP11595-mask-cell.ome.tif	|	HTAN, AWS	|	1.914 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL49	|	LSP11602-mask-cell.ome.tif	|	HTAN, AWS	|	5.585 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL49	|	LSP11603-mask-cell.ome.tif	|	HTAN, AWS	|	3.083 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL51	|	LSP11618-mask-cell.ome.tif	|	HTAN, AWS	|	3.444 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL52	|	LSP11626-mask-cell.ome.tif	|	HTAN, AWS	|	906.7 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL52	|	LSP11627-mask-cell.ome.tif	|	HTAN, AWS	|	4.01 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL53	|	LSP11634-mask-cell.ome.tif	|	HTAN, AWS	|	9.434 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL53	|	LSP11635-mask-cell.ome.tif	|	HTAN, AWS	|	7.656 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL54	|	LSP11642-mask-cell.ome.tif	|	HTAN, AWS	|	16.999 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL54	|	LSP11643-mask-cell.ome.tif	|	HTAN, AWS	|	14.999 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL55	|	LSP11658-mask-cell.ome.tif	|	HTAN, AWS	|	8.107 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL55	|	LSP11659-mask-cell.ome.tif	|	HTAN, AWS	|	6.609 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL56	|	LSP11667-mask-cell.ome.tif	|	HTAN, AWS	|	2.05 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL58	|	LSP11690-mask-cell.ome.tif	|	HTAN, AWS	|	7.566 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL58	|	LSP11691-mask-cell.ome.tif	|	HTAN, AWS	|	7.218 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL59	|	LSP11698-mask-cell.ome.tif	|	HTAN, AWS	|	3.32 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL60	|	LSP11706-mask-cell.ome.tif	|	HTAN, AWS	|	2.967 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL60	|	LSP11707-mask-cell.ome.tif	|	HTAN, AWS	|	2.265 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL61	|	LSP11714-mask-cell.ome.tif	|	HTAN, AWS	|	19.632 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL62	|	LSP11720-mask-cell.ome.tif	|	HTAN, AWS	|	546.1 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL64	|	LSP11738-mask-cell.ome.tif	|	HTAN, AWS	|	6.359 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL64	|	LSP11739-mask-cell.ome.tif	|	HTAN, AWS	|	5.713 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL65	|	LSP11746-mask-cell.ome.tif	|	HTAN, AWS	|	3.397 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL65	|	LSP11747-mask-cell.ome.tif	|	HTAN, AWS	|	3.686 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL66	|	LSP11754-mask-cell.ome.tif	|	HTAN, AWS	|	685.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL67	|	LSP11762-mask-cell.ome.tif	|	HTAN, AWS	|	3.165 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL68	|	LSP11770-mask-cell.ome.tif	|	HTAN, AWS	|	3.456 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL68	|	LSP11771-mask-cell.ome.tif	|	HTAN, AWS	|	3.84 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL68	|	LSP11778-mask-cell.ome.tif	|	HTAN, AWS	|	2.792 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL69	|	LSP11786-mask-cell.ome.tif	|	HTAN, AWS	|	2.87 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL50	|	LSP12422-mask-cell.ome.tif	|	HTAN, AWS	|	4.451 GB	|	RP-p16-e24_PCAphaseII_lineage
+MEL50	|	LSP12424-mask-cell.ome.tif	|	HTAN, AWS	|	5.142 GB	|	p16_e41_PCAII_tumorintrinsic
+MEL70	|	LSP13078-mask-cell.ome.tif	|	HTAN, AWS	|	20.733 GB	|	p135_e9_PCAlineage
+MEL73	|	LSP13102-mask-cell.ome.tif	|	HTAN, AWS	|	22.392 GB	|	p135_e9_PCAlineage
+MEL71	|	LSP13179-mask-cell.ome.tif	|	HTAN, AWS	|	28.408 GB	|	p135_e9_PCAlineage
+MEL72	|	LSP13186-mask-cell.ome.tif	|	HTAN, AWS	|	16.999 GB	|	p135_e9_PCAlineage
+MEL74	|	LSP15120-mask-cell.ome.tif	|	HTAN, AWS	|	18.845 GB	|	p135_e9_PCAlineage
+MEL75	|	LSP15129-mask-cell.ome.tif	|	HTAN, AWS	|	23.788 GB	|	p135_e9_PCAlineage
+MEL76	|	LSP15138-mask-cell.ome.tif	|	HTAN, AWS	|	7.782 GB	|	p135_e9_PCAlineage
+MEL78	|	LSP15156-mask-cell.ome.tif	|	HTAN, AWS	|	20.268 GB	|	p135_e9_PCAlineage
+MEL79	|	LSP15165-mask-cell.ome.tif	|	HTAN, AWS	|	10.406 GB	|	p135_e9_PCAlineage
+MEL80	|	LSP15174-mask-cell.ome.tif	|	HTAN, AWS	|	5.945 GB	|	p135_e9_PCAlineage
+MEL81	|	LSP15183-mask-cell.ome.tif	|	HTAN, AWS	|	10.14 GB	|	p135_e9_PCAlineage
+MEL82	|	LSP15192-mask-cell.ome.tif	|	HTAN, AWS	|	20.939 GB	|	p135_e9_PCAlineage
+MEL83	|	LSP15201-mask-cell.ome.tif	|	HTAN, AWS	|	11.666 GB	|	p135_e9_PCAlineage
+MEL84	|	LSP15210-mask-cell.ome.tif	|	HTAN, AWS	|	6.297 GB	|	p135_e9_PCAlineage
+MEL85/MEL86	|	LSP15219-mask-cell.ome.tif	|	HTAN, AWS	|	9.877 GB	|	p135_e9_PCAlineage
+
 
 ​
 
-### Feature Table Data
+### Features Table Data
 |Patient ID | File Name      | Location | File size | CyCIF Panel |
 |------- | ------------|------------|-----------|-------|
-|ID | ID.csv |  |  |
+MEL14	|	LSP11314--unmicst_cellRing.csv	|	HTAN, AWS	|	128.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL14	|	unmicst-LSP11315_cell.csv	|	HTAN, AWS	|	141.2 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL15	|	LSP11322--unmicst_cellRing.csv	|	HTAN, AWS	|	31.2 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL16	|	LSP11330--unmicst_cellRing.csv	|	HTAN, AWS	|	128.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL16	|	unmicst-LSP11331_cell.csv	|	HTAN, AWS	|	96.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL17	|	unmicst-LSP11339_cell.csv	|	HTAN, AWS	|	12.6 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL18	|	unmicst-LSP11347_cell.csv	|	HTAN, AWS	|	131.5 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL18	|	LSP11349--unmicst_cellRing.csv	|	HTAN, AWS	|	128.7 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL19	|	LSP11354--unmicst_cellRing.csv	|	HTAN, AWS	|	104.1 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL19	|	unmicst-LSP11355_cell.csv	|	HTAN, AWS	|	83.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL21	|	unmicst-LSP11371_cell.csv	|	HTAN, AWS	|	13.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL21	|	LSP11373--unmicst_cellRing.csv	|	HTAN, AWS	|	29.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL22	|	LSP11378--unmicst_cellRing.csv	|	HTAN, AWS	|	286.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL22	|	unmicst-LSP11379_cell.csv	|	HTAN, AWS	|	290.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL23	|	LSP11386--unmicst_cellRing.csv	|	HTAN, AWS	|	245.2 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL23	|	unmicst-LSP11387_cell.csv	|	HTAN, AWS	|	243.5 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL24	|	LSP11394--unmicst_cellRing.csv	|	HTAN, AWS	|	34.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL24	|	unmicst-LSP11395_cell.csv	|	HTAN, AWS	|	67.1 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL25	|	LSP11402--unmicst_cellRing.csv	|	HTAN, AWS	|	112.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL25	|	unmicst-LSP11403_cell.csv	|	HTAN, AWS	|	116.4 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL26	|	LSP11410--unmicst_cellRing.csv	|	HTAN, AWS	|	39.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL26	|	unmicst-LSP11411_cell.csv	|	HTAN, AWS	|	58.2 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL27	|	LSP11418--unmicst_cellRing.csv	|	HTAN, AWS	|	132.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL27	|	unmicst-LSP11419_cell.csv	|	HTAN, AWS	|	145.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL28	|	LSP11426--unmicst_cellRing.csv	|	HTAN, AWS	|	9.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL29	|	unmicst-LSP11435_cell.csv	|	HTAN, AWS	|	3.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL30	|	LSP11440--unmicst_cellRing.csv	|	HTAN, AWS	|	16.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL31	|	LSP11450--unmicst_cellRing.csv	|	HTAN, AWS	|	37.1 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL31	|	unmicst-LSP11451_cell.csv	|	HTAN, AWS	|	24.5 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL32	|	LSP11458--unmicst_cellRing.csv	|	HTAN, AWS	|	38.4 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL32	|	unmicst-LSP11459_cell.csv	|	HTAN, AWS	|	25.3 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL33	|	LSP11466--unmicst_cellRing.csv	|	HTAN, AWS	|	50.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL33	|	unmicst-LSP11467_cell.csv	|	HTAN, AWS	|	50.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL34	|	LSP11474--unmicst_cellRing.csv	|	HTAN, AWS	|	47.2 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL34	|	unmicst-LSP11475_cell.csv	|	HTAN, AWS	|	34.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL35	|	LSP11482--unmicst_cellRing.csv	|	HTAN, AWS	|	81.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL35	|	unmicst-LSP11483_cell.csv	|	HTAN, AWS	|	76.3 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL36	|	LSP11490--unmicst_cellRing.csv	|	HTAN, AWS	|	19.4 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL36	|	LSP11498--unmicst_cellRing.csv	|	HTAN, AWS	|	11.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL37	|	LSP11506--unmicst_cellRing.csv	|	HTAN, AWS	|	58.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL37	|	unmicst-LSP11507_cell.csv	|	HTAN, AWS	|	46.1 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL38	|	LSP11514--unmicst_cellRing.csv	|	HTAN, AWS	|	60.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL38	|	unmicst-LSP11515_cell.csv	|	HTAN, AWS	|	34.3 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL39	|	LSP11522--unmicst_cellRing.csv	|	HTAN, AWS	|	15.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL39	|	unmicst-LSP11523_cell.csv	|	HTAN, AWS	|	16.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL40	|	LSP11530--unmicst_cellRing.csv	|	HTAN, AWS	|	51.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL40	|	unmicst-LSP11531_cell.csv	|	HTAN, AWS	|	44.6 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL41	|	LSP11538--unmicst_cellRing.csv	|	HTAN, AWS	|	66.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL42	|	LSP11546--unmicst_cellRing.csv	|	HTAN, AWS	|	49.4 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL42	|	unmicst-LSP11547_cell.csv	|	HTAN, AWS	|	34.0 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL44	|	LSP11562--unmicst_cellRing.csv	|	HTAN, AWS	|	26.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL44	|	unmicst-LSP11563_cell.csv	|	HTAN, AWS	|	38.3 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL45	|	LSP11570--unmicst_cellRing.csv	|	HTAN, AWS	|	40.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL45	|	unmicst-LSP11571_cell.csv	|	HTAN, AWS	|	17.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL47	|	LSP11586--unmicst_cellRing.csv	|	HTAN, AWS	|	85.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL47	|	unmicst-LSP11587_cell.csv	|	HTAN, AWS	|	58.6 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL48	|	LSP11594--unmicst_cellRing.csv	|	HTAN, AWS	|	69.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL48	|	unmicst-LSP11595_cell.csv	|	HTAN, AWS	|	66.1 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL49	|	LSP11602--unmicst_cellRing.csv	|	HTAN, AWS	|	69.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL49	|	unmicst-LSP11603_cell.csv	|	HTAN, AWS	|	59.4 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL51	|	LSP11618--unmicst_cellRing.csv	|	HTAN, AWS	|	76.4 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL52	|	LSP11626--unmicst_cellRing.csv	|	HTAN, AWS	|	46.5 KB	|	p16_e41_PCAII_tumorintrinsic
+MEL52	|	unmicst-LSP11627_cell.csv	|	HTAN, AWS	|	52.9 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL53	|	LSP11634--unmicst_cellRing.csv	|	HTAN, AWS	|	57.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL53	|	unmicst-LSP11635_cell.csv	|	HTAN, AWS	|	42.5 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL54	|	LSP11642--unmicst_cellRing.csv	|	HTAN, AWS	|	126.6 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL54	|	unmicst-LSP11643_cell.csv	|	HTAN, AWS	|	128.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL55	|	LSP11658--unmicst_cellRing.csv	|	HTAN, AWS	|	149.5 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL55	|	unmicst-LSP11659_cell.csv	|	HTAN, AWS	|	106.6 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL56	|	unmicst-LSP11667_cell.csv	|	HTAN, AWS	|	29.1 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL58	|	LSP11690--unmicst_cellRing.csv	|	HTAN, AWS	|	226.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL58	|	unmicst-LSP11691_cell.csv	|	HTAN, AWS	|	259.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL59	|	LSP11698--unmicst_cellRing.csv	|	HTAN, AWS	|	86.7 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL60	|	LSP11706--unmicst_cellRing.csv	|	HTAN, AWS	|	32.8 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL60	|	unmicst-LSP11707_cell.csv	|	HTAN, AWS	|	9.4 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL61	|	LSP11714--unmicst_cellRing.csv	|	HTAN, AWS	|	77.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL62	|	LSP11720--unmicst_cellRing.csv	|	HTAN, AWS	|	10.4 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL64	|	LSP11738--unmicst_cellRing.csv	|	HTAN, AWS	|	41.6 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL64	|	unmicst-LSP11739_cell.csv	|	HTAN, AWS	|	32.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL65	|	LSP11746--unmicst_cellRing.csv	|	HTAN, AWS	|	46.7 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL65	|	unmicst-LSP11747_cell.csv	|	HTAN, AWS	|	60.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL66	|	LSP11754--unmicst_cellRing.csv	|	HTAN, AWS	|	13.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL67	|	LSP11762--unmicst_cellRing.csv	|	HTAN, AWS	|	31.3 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL68	|	LSP11770--unmicst_cellRing.csv	|	HTAN, AWS	|	39.7 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL68	|	unmicst-LSP11771_cell.csv	|	HTAN, AWS	|	30.8 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL68	|	LSP11778--unmicst_cellRing.csv	|	HTAN, AWS	|	57.0 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL69	|	LSP11786--unmicst_cellRing.csv	|	HTAN, AWS	|	73.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL50	|	unmicst-LSP12422_cell.csv	|	HTAN, AWS	|	39.7 MB	|	RP-p16-e24_PCAphaseII_lineage
+MEL50	|	LSP12424--unmicst_cellRing.csv	|	HTAN, AWS	|	45.9 MB	|	p16_e41_PCAII_tumorintrinsic
+MEL70	|	LSP13078--unmicst_cellRing.csv	|	HTAN, AWS	|	1.548 GB	|	p135_e9_PCAlineage
+MEL73	|	LSP13102--unmicst_cellRing.csv	|	HTAN, AWS	|	547.9 MB	|	p135_e9_PCAlineage
+MEL71	|	LSP13179--unmicst_cellRing.csv	|	HTAN, AWS	|	922.0 MB	|	p135_e9_PCAlineage
+MEL72	|	LSP13186--unmicst_cellRing.csv	|	HTAN, AWS	|	998.0 MB	|	p135_e9_PCAlineage
+MEL74	|	LSP15120--unmicst_cellRing.csv	|	HTAN, AWS	|	730.9 MB	|	p135_e9_PCAlineage
+MEL75	|	LSP15129--unmicst_cellRing.csv	|	HTAN, AWS	|	1.47 GB	|	p135_e9_PCAlineage
+MEL76	|	LSP15138--unmicst_cellRing.csv	|	HTAN, AWS	|	166.7 MB	|	p135_e9_PCAlineage
+MEL78	|	LSP15156--unmicst_cellRing.csv	|	HTAN, AWS	|	734.8 MB	|	p135_e9_PCAlineage
+MEL79	|	LSP15165--unmicst_cellRing.csv	|	HTAN, AWS	|	92.5 MB	|	p135_e9_PCAlineage
+MEL80	|	LSP15174--unmicst_cellRing.csv	|	HTAN, AWS	|	558.2 MB	|	p135_e9_PCAlineage
+MEL81	|	LSP15183--unmicst_cellRing.csv	|	HTAN, AWS	|	218.7 MB	|	p135_e9_PCAlineage
+MEL82	|	LSP15192--unmicst_cellRing.csv	|	HTAN, AWS	|	1.682 GB	|	p135_e9_PCAlineage
+MEL83	|	LSP15201--unmicst_cellRing.csv	|	HTAN, AWS	|	125.8 MB	|	p135_e9_PCAlineage
+MEL84	|	LSP15210--unmicst_cellRing.csv	|	HTAN, AWS	|	371.7 MB	|	p135_e9_PCAlineage
+MEL85/MEL86	|	LSP15219--unmicst_cellRing.csv	|	HTAN, AWS	|	310.1 MB	|	p135_e9_PCAlineage
+
 ​
 ​  
   
