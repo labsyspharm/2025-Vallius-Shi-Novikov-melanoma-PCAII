@@ -1,0 +1,4490 @@
+---
+title: "PCA project analysis GeomMX copy number alteration "
+output: html_notebook
+author: Yingxiao Shi(TK)
+---
+
+```{r library load, massage = FALSE, warning = FALSE, include = FALSE}
+library(NanoStringNCTools)
+library(GeomxTools)
+library(GeoMxWorkflows)
+library(ggthemes)
+library(ggiraph)
+
+# library for DEG analysis
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(enrichplot)
+library(knitr)
+
+# library for plotting
+library(dplyr)
+library(ggforce)
+library(ggplot2)
+library(scales)
+
+library(reshape2)  # for melt
+library(cowplot)
+library(umap)
+library(Rtsne)
+library(DESeq2)
+library(tidyverse)
+library(pheatmap)
+library(ggrepel)
+require(gridExtra)
+library(repr)
+library(readxl)
+
+# for single gene signature analysis
+library(GSVA)
+library(som)
+library(ComplexHeatmap)
+library(colorspace)
+library(oposSOM)
+
+library(ggstatsplot)
+library(Biobase)
+
+library(ComplexHeatmap)
+library(circlize)
+library(RColorBrewer)
+library(grid)  # For handling grid graphics objects
+library(ggplot2)  # For using ggsave
+library(dendextend)
+library(seriation)
+
+```
+
+signatures load (really need to organize them)
+```{r, signature analysis}
+# set the working directory
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/")
+
+# load all the signatures
+metabolism_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/KEGG_metabolism_pathway.csv")[-1]
+metabolism_geneSigList <- as.list(metabolism_geneSig)
+metabolism_geneSigList <- lapply(metabolism_geneSigList, function(x) x[x != ""])
+
+geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/2018_cell_type_markers.csv", skip = 1, header = T)
+cyclin_geneSig <- as.list(geneSig[, c("CELL.CYCLE..G1.S", "CELL.CYCLE..G2.M")])
+cyclin_geneSig <- lapply(cyclin_geneSig, function(x) x[x != ""])
+
+MITF_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/mitf_axl_from_tirosh2016.txt", sep = "\t" )
+mitf_geneSig <- as.list(MITF_geneSig[, c("MITF_SIG", "AXL_SIG", "QUIESCENCE")])
+mitf_geneSig <- lapply(mitf_geneSig, function(x) x[x != ""])
+
+# now looking at the seven gene signature
+seven_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/seven_tumorsigDF.csv")[-1]
+seven_geneSigList <- lapply(as.list(seven_geneSig), function(x) x[x != ""])
+
+
+# now take the hallmark pathway gene signatures
+hallmark_pathway_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/hallmark_pathway.csv")[-1]
+hallmark_pathway_geneSigList <- lapply(as.list(hallmark_pathway_geneSig), function(x) x[x != ""])
+#hallmark_pathway_geneSigList[0:1]
+
+cyclin_geneSig["QUIESCENCE"] <- mitf_geneSig["QUIESCENCE"]
+#mitf_geneSig <- mit_geneSig.pop("QUIESCENCE")
+mitf_geneSig <- mitf_geneSig[c("MITF_SIG", "AXL_SIG")]
+
+Neocroptosis <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/GOBP_NECROPTOTIC_SIGNALING_PATHWAY.v2023.1.Hs.tsv", sep = "\t")
+Pyroptosis <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/REACTOME_PYROPTOSIS.v2023.1.Hs.tsv", sep = "\t")
+Ferprotosis <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/WP_FERROPTOSIS.v2023.1.Hs.tsv", sep = "\t")
+
+NEOCROPTOSIS_list <- strsplit(Neocroptosis$GOBP_NECROPTOTIC_SIGNALING_PATHWAY[17], ",")[[1]]
+PYROPTOSIS_list <- strsplit(Pyroptosis$REACTOME_PYROPTOSIS[17], ",")[[1]]
+FERPROTOSIS_list <- strsplit(Ferprotosis$WP_FERROPTOSIS[17], ",")[[1]][-1]
+Overall_geneSig <- c(cyclin_geneSig, mitf_geneSig, hallmark_pathway_geneSigList)
+Overall_geneSig$NEOCROPTOSIS <- c(NEOCROPTOSIS_list)
+Overall_geneSig$FERPROPTOSIS <- c(FERPROTOSIS_list)
+Overall_geneSig$PYROPTOSIS <- c(PYROPTOSIS_list)
+Overall_geneSig$SENESCENCE <- c("E2F1", "E2F3", "NF1", "PTEN") 
+
+selected_geneSig <- Overall_geneSig[c("CELL.CYCLE..G1.S", "CELL.CYCLE..G2.M", 
+                                      "QUIESCENCE", 
+                                      "HALLMARK_APOPTOSIS", "NEOCROPTOSIS", "FERPROPTOSIS", "PYROPTOSIS"
+                                      # ,"MITF_SIG", "AXL_SIG"
+)]
+
+summary(selected_geneSig)
+names(selected_geneSig) <- c("G1S_SIG(43)", "G2M_SIG(54)", "QUIESCENCE_SIG(49)", 
+                             "APOPTOSIS_SIG(183)", "NECROPTOSIS_SIG(8)", "FERROPTOSIS_SIG(64)", "PYROPTOSIS_SIG(30)"
+                             #, "MITF_SIG(100)","AXL_SIG(100)"
+)
+
+selected_geneSig$`APOPTOSIS_SIG(183)` <- unique(selected_geneSig$`APOPTOSIS_SIG(183)`)
+
+names(selected_geneSig) <- c("G1S_SIG(43)", "G2M_SIG(54)", "QUIESCENCE_SIG(49)", 
+                             "APOPTOSIS_SIG(161)", "NECROPTOSIS_SIG(8)", "FERROPTOSIS_SIG(64)", "PYROPTOSIS_SIG(30)"
+                             #, "MITF_SIG(100)","AXL_SIG(100)"
+)
+
+# immune gene signatures
+# try new immune related pathays
+immune_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/gene_signatures/immune_geneSig.csv")
+immune_geneSig_list <- list()
+
+for (sig in unique(immune_geneSig$Gene.signature)[-1]){
+  #print(sig)
+  if (sig != "") {
+    subset_df <- subset(immune_geneSig, Gene.signature == sig)
+    #print(subset_df)
+    immune_geneSig_list[[sig]] <- subset_df$Gene}}
+```
+
+```{r create the tumor signatures}
+seven_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/seven_tumorsigDF.csv")[-1]
+seven_geneSigList <- lapply(as.list(seven_geneSig), function(x) x[x != ""])
+
+all_tumorSig <- read_xlsx("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/various_melanoma_transcript_programs.xlsx")
+
+proliferationSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/seven_tumorsigDF.csv")
+
+geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/2018_cell_type_markers.csv", skip = 1, header = T)
+
+cyclin_geneSig <- as.list(geneSig[, c("CELL.CYCLE..G1.S", "CELL.CYCLE..G2.M")])
+cyclin_geneSig <- lapply(cyclin_geneSig, function(x) x[x != ""])
+
+MITF_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/gene_signatures/mitf_axl_from_tirosh2016.txt", sep = "\t" )
+mitf_geneSig <- as.list(MITF_geneSig[, c("MITF_SIG", "AXL_SIG", "QUIESCENCE")])
+mitf_geneSig <- lapply(mitf_geneSig, function(x) x[x != ""])
+
+# now take the hallmark pathway gene signatures
+hallmark_pathway_geneSig <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project2_stable_disease_project/GeoMX_analysis/hallmark_pathway.csv")[-1]
+hallmark_pathway_geneSigList <- lapply(as.list(hallmark_pathway_geneSig), function(x) x[x != ""])
+#hallmark_pathway_geneSigList[0:1]
+
+colnames(all_tumorSig) <- make.names(colnames(all_tumorSig))
+
+all_tumorSig_list <- lapply(as.list(all_tumorSig), function(x) x[!is.na(x)])
+```
+
+```{r, all tumor signatures}
+all_states <- c("Tirosh.MITF", "Tirosh.AXL", 
+                "Tsoi.UNDIFF", "Tsoi.NEURAL.CREST.like", "Tsoi.TRANSITORY", "Tsoi.MELANOCYTIC", 
+                "Wouters.INTERMEDIATE", "Wouters.MES.like", "Wouters.MELANOCYTIC", 
+                "Baron.STRESS", "Baron.NC.like", "Baron.MELANOCYTIC",
+                "Rambow.NCSC", "Rambow.INVASIVE", "Rambow.SMC", "Rambow.HYPERdiff",
+                "Karras.melanocytic..Oxphos.", "Karras.Neural.Crest.like", "Karras.RNA.processing", "Karras.Antigen.presentation", "Karras.Stem.like", "Karras.Stess.like..hypoxia.", "Karras.mesenchymal.like")
+
+
+selected_tumor_states <- c("Tirosh.MITF", "Tirosh.AXL", 
+                "Tsoi.NEURAL.CREST.like", "Tsoi.MELANOCYTIC", 
+                "Wouters.MES.like", "Wouters.MELANOCYTIC", 
+                "Baron.NC.like", "Baron.MELANOCYTIC",
+                "Rambow.NCSC", "Rambow.HYPERdiff",
+                "Karras.melanocytic..Oxphos.", "Karras.Neural.Crest.like")
+
+tumor_states <- all_tumorSig_list[all_states]
+selected_states <- all_tumorSig_list[selected_tumor_states]
+
+summary(tumor_states)
+
+names(selected_states) <- c("Tirosh.MITF(100)", "Tirosh.AXL(100)", 
+                "Tsoi.NEURAL.CREST.like(66)", "Tsoi.MELANOCYTIC(62)", 
+                "Wouters.MES.like(2115)", "Wouters.MELANOCYTIC(1574)", 
+                "Baron.NC.like(212)", "Baron.MELANOCYTIC(176)",
+                "Rambow.NCSC(42)", "Rambow.HYPERdiff(15)",
+                "Karras.melanocytic.Oxphos(17)", "Karras.Neural.Crest.like(26)")
+
+names(tumor_states) <- c("Tirosh.MITF(100)", "Tirosh.AXL(100)", "Tsoi.UNDIFF(118)",
+                         "Tsoi.NEURAL.CREST.like(66)", "Tsoi.TRANSITORY(29)", "Tsoi.MELANOCYTIC(62)",
+                         "Wouters.INTERMEDIATE(394)", "Wouters.MES.like(2115)", "Wouters.MELANOCYTIC(1574)", 
+                         "Baron.STRESS(61)", "Baron.NC.like(212)", "Baron.MELANOCYTIC(176)",
+                         "Rambow.NCSC(42)", "Rambow.SMC(14)", "Rambow.HYPERdiff(15)", 
+                         "Karras.melanocytic.Oxphos(17)", "Karras.Neural.Crest.like(26)", "Karras.RNA.processing(32)", "Karras.Antigen.presentation(42)",
+                         "Karras.Stem.like(38)", "Karras.Stess.like.hypoxia(20)", "Karras.mesenchymal.like(32)")
+```
+actual analysis for entrop plotting
+```{r, fig.height = 6, fig.width = 8}
+merged_entropy <- read.csv("/Users/yshi797/Desktop/PCA/merged_entropy.csv", row.names = 1)
+merged_entropy
+
+custom_colors <- c(
+  "N" = "skyblue",  # orange
+  "MIS" = "purple2",    # sky blue
+  "P" = "darkgreen",      # teal
+  "RGP" = "orange", # yellow
+  "VGP" = "brown3"
+  #"DN" = "grey"# blue
+)
+
+text_size = 12
+
+merged_entropy_plot <- ggplot(merged_entropy, aes(PC1, PC2, fill = histopathology)) +
+  geom_point(shape = 21, size = 2, alpha = 0.7, color = "black") +
+  labs(
+    #x = paste0("PC1: ", percentVar_non[1], "% variance"),
+   #    y = paste0("PC2: ", percentVar_non[2], "% variance"),
+       title = "PCA Plot colored by histopathology and shaped by batch") +
+  scale_fill_manual(values = custom_colors) +  # Use the defined custom colors and fallback color
+  theme_classic() +
+  theme(legend.position = "bottom",
+        text = element_text(size = text_size),
+        axis.text = element_text(size = text_size),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank())
+
+print(merged_entropy_plot)
+```
+
+
+
+# now define the comparison groups based on PC1
+```{r}
+merged_entropy$comparison <- "Others"
+merged_entropy[merged_entropy$PC1 > 0, "comparison"] <- "right_PC1"
+merged_entropy[merged_entropy$PC1 <= 0, "comparison"] <- "left_PC1"
+
+table(merged_entropy$comparison)
+
+
+# Create the boxplot
+entropy_plot <- ggplot(merged_entropy, aes(x = comparison, y = H_spatial#, fill = histopathology
+                                           )) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot without default outliers
+  geom_jitter(width = 0.2, size = 2, color = "grey50", alpha = 0.7) +  # Jittered points
+  #scale_x_discrete(limits = x_order) +  # Set custom order for x-axis
+  scale_fill_manual(values = custom_colors) +  # Set custom fill colors
+  theme_minimal() +
+  labs(
+    title = "Comparison of Spatial Entropy by Breslow Bucket",
+    x = "Breslow Bucket",
+    y = "Spatial Entropy"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none"
+  )
+
+print(entropy_plot)
+```
+
+
+```{r}
+merged_entropy_sub <- merged_entropy[merged_entropy$histopathology %in% c("VGP", "RGP"), ]
+
+merged_entropy_sub$comparison <- "Others"
+merged_entropy_sub[merged_entropy_sub$PC1 > 0, "comparison"] <- "right_PC1"
+merged_entropy_sub[merged_entropy_sub$PC1 <= 0, "comparison"] <- "left_PC1"
+
+table(merged_entropy_sub$comparison)
+
+
+# Create the boxplot
+entropy_plot <- ggplot(merged_entropy_sub, aes(x = comparison, y = H_spatial#, fill = histopathology
+                                           )) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot without default outliers
+  geom_jitter(width = 0.2, size = 2, color = "grey50", alpha = 0.7) +  # Jittered points
+  #scale_x_discrete(limits = x_order) +  # Set custom order for x-axis
+  scale_fill_manual(values = custom_colors) +  # Set custom fill colors
+  theme_minimal() +
+  labs(
+    title = "Comparison of Spatial Entropy by Breslow Bucket",
+    x = "Breslow Bucket",
+    y = "Spatial Entropy"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none"
+  )
+
+print(entropy_plot)
+```
+
+
+
+# Access the data
+```{r, read the data}
+PCAI_merged_pheno <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/PCAI_merged_pheno_05222024.csv", row.names = 1)
+PCAI_merged_raw <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/PCAI_merged_raw_05192024.csv", row.names = 1)
+PCAI_merged_vst <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/PCAI_merged_norm_batchcorrected_05192024.csv", row.names = 1)
+```
+
+```{r, clear the rownames for matching}
+# Define a function to replace only the first three dots with hyphens
+replace_first_three_dots <- function(name) {
+  # Split the name by dots
+  parts <- unlist(strsplit(name, "\\."))
+  new_name <- paste(paste(parts[1:4], collapse = "-"), paste(parts[5:length(parts)], collapse = "."), sep = ".")
+  return(new_name)
+  }
+
+colnames(PCAI_merged_raw) <- sapply(colnames(PCAI_merged_raw), replace_first_three_dots)
+colnames(PCAI_merged_vst) <- sapply(colnames(PCAI_merged_vst), replace_first_three_dots)
+```
+
+# check the data matching 
+```{r}
+head(colnames(PCAI_merged_raw))
+head(colnames(PCAI_merged_vst))
+```
+# to run SOM use log transformed data. 
+# use tumor ROI only sample
+# identify t
+
+```{r}
+print(table(PCAI_merged_pheno$histopathology))
+print(table(PCAI_merged_pheno$composition_TV))
+selected_hist <- c("N", "P", "MIS", "VGP", "RGP")
+selected_celltype <- c("tumor", "melanocyte")
+```
+```{r, sample selection}
+batch2_tumor_samples <- rownames(PCAI_merged_pheno[(PCAI_merged_pheno$batch_str == "Batch_2") &
+                                                     (PCAI_merged_pheno$histopathology %in% selected_hist) &
+                                                     (PCAI_merged_pheno$composition_TV %in% selected_celltype), ])
+#print(batch2_tumor_samples)
+print(length(batch2_tumor_samples))
+```
+
+# check on batch 1 data
+```{r}
+batch1_tumor_samples <- rownames(PCAI_merged_pheno[(PCAI_merged_pheno$batch_str == "Batch_1") &
+                                                     (PCAI_merged_pheno$histopathology %in% selected_hist) &
+                                                     (PCAI_merged_pheno$composition_TV %in% selected_celltype), ])
+print(length(batch1_tumor_samples))
+
+tumor_pheno_b1 <- PCAI_merged_pheno[batch1_tumor_samples, ]
+tumor_raw_count_b1 <- PCAI_merged_raw[, batch1_tumor_samples]
+
+table(tumor_pheno_b1$histopathology)
+
+#tumor_raw_count_b1
+# now create dds project
+b1_dds <- DESeqDataSetFromMatrix(countData = round(tumor_raw_count_b1),
+                                 colData = tumor_pheno_b1,
+                                 design = ~ histopathology)
+
+b1_dds <- DESeq(b1_dds)
+# extract the normalized counts
+b1_dds <- estimateSizeFactors(b1_dds)
+b1_norm <- counts(b1_dds, normalize = T)
+b1_log <- log2(b1_norm + 1)
+#b2_log_matrix <- as.matrix(b2_log)
+
+table(tumor_pheno_b1$composition_TV)
+```
+```{r, SOM input prep for batch 1}
+# assign input
+b1_exprs_data <- b1_log
+
+b1_group.info <- data.frame(
+  group.labels = tumor_pheno_b1$histopathology,
+  row.names = row.names(tumor_pheno_b1)
+)
+
+b1_group.info$group.colors = "unknown"
+
+b1_group.info[b1_group.info$group.labels == "P", "group.colors"] <- "forestgreen"
+b1_group.info[b1_group.info$group.labels == "MIS", "group.colors"] <- "pink"
+b1_group.info[b1_group.info$group.labels == "RGP", "group.colors"] <- "orange"
+b1_group.info[b1_group.info$group.labels == "VGP", "group.colors"] <- "tomato"
+
+print(table(b1_group.info$group.labels))
+print(table(b1_group.info$group.colors))
+
+b1_pheno_data_color <- AnnotatedDataFrame(data = b1_group.info)
+
+b1_exprs_set <- ExpressionSet(assayData = b1_exprs_data,
+                              phenoData = b1_pheno_data_color)
+
+b1_exprs_set
+```
+
+```{r, create SOM envrionment for batch1 tumor using 30}
+b1_env <- opossom.new(list(dataset.name = "PCAI_batch1_tumor_30x30_01212025", dim.1stLvlSom = 30))
+b1_env$indata <- b1_exprs_set
+b1_env$group.labels <- b1_group.info$group.labels
+b1_env$group.colors <- b1_group.info$group.colors
+
+b1_env
+```
+
+```{r, run SOM for batch1 tumor}
+#opossom.run(b1_env)
+```
+
+
+```{r}
+b1_env_40 <- opossom.new(list(dataset.name = "PCAI_batch1_tumor_40x40_01212025", dim.1stLvlSom = 40))
+b1_env_40$indata <- b1_exprs_set
+b1_env_40$group.labels <- b1_group.info$group.labels
+b1_env_40$group.colors <- b1_group.info$group.colors
+
+#opossom.run(b1_env_40)
+```
+
+
+# subset the data and create the DEG project (for generating nomalized log-transformed counts)
+```{r, dds creation}
+tumor_pheno_b2 <-  PCAI_merged_pheno[batch2_tumor_samples, ]
+tumor_raw_count_b2 <- PCAI_merged_raw[, batch2_tumor_samples]
+
+# now create dds project
+b2_dds <- DESeqDataSetFromMatrix(countData = round(tumor_raw_count_b2),
+                                 colData = tumor_pheno_b2,
+                                 design = ~ histopathology)
+# extract the normalized counts
+b2_dds <- DESeq(b2_dds)
+b2_dds <- estimateSizeFactors(b2_dds)
+b2_norm <- counts(b2_dds, normalize = T)
+b2_log <- log2(b2_norm + 1)
+#b2_log_matrix <- as.matrix(b2_log)
+```
+
+
+
+# now rerun SOM
+```{r, SOM input prep 2}
+# assign input
+b2_exprs_data <- b2_log
+
+b2_group.info <- data.frame(
+  group.labels = tumor_pheno_b2$histopathology,
+  row.names = row.names(tumor_pheno_b2)
+)
+
+# assign color to each label
+b2_group.info$group.colors = "unknown"
+
+b2_group.info[b2_group.info$group.labels == "N", "group.colors"] <- "steelblue"
+b2_group.info[b2_group.info$group.labels == "P", "group.colors"] <- "forestgreen"
+b2_group.info[b2_group.info$group.labels == "MIS", "group.colors"] <- "pink"
+b2_group.info[b2_group.info$group.labels == "RGP", "group.colors"] <- "orange"
+b2_group.info[b2_group.info$group.labels == "VGP", "group.colors"] <- "tomato"
+
+print(table(b2_group.info$group.labels))
+print(table(b2_group.info$group.colors))
+
+b2_pheno_data_color <- AnnotatedDataFrame(data = b2_group.info)
+#pheno_data_color
+b2_exprs_set <- ExpressionSet(assayData = b2_exprs_data,
+                              phenoData = b2_pheno_data_color)
+
+b2_exprs_set
+```
+
+```{r, create SOM envrionment 2}
+b2_env_40 <- opossom.new(list(dataset.name = "PCAI_batch2_tumor_40x40_01212024", dim.1stLvlSom = 40))
+b2_env_40$indata <- b2_exprs_set
+b2_env_40$group.labels <- b2_group.info$group.labels
+b2_env_40$group.colors <- b2_group.info$group.colors
+```
+
+```{r, run SOM 2}
+#opossom.run(b2_env_40)
+```
+# now extract 2 separate branch
+```{r}
+# reference code is from sample_similarity_analysis_corr.r  
+# https://github.com/hloefflerwirth/oposSOM/blob/master/R/sample_similarity_analysis_cor.r
+
+mixColors<-function(c1, c2,alpha=122 )
+  {
+    do.call( rgb,
+             as.list( c( colMeans( sapply(c(2,4,6),function(i)
+               c( strtoi(substr(c1,i,i+1),16), strtoi(substr(c2,i,i+1),16) )
+               
+             ) ), alpha ) /255 )
+    )
+}
+
+groupwise.group.colors.stability.1 <- apply((col2rgb(b2_env$groupwise.group.colors) + 0.7 * (255 - col2rgb(b2_env$groupwise.group.colors))) / 255,2, function(x) rgb(x[1],x[2],x[3]))
+
+groupwise.group.colors.stability.2 <- apply((col2rgb(b2_env$groupwise.group.colors) + 0.9 *
+          (255 - col2rgb(b2_env$groupwise.group.colors))) / 255,
+       2, function(x) rgb(x[1],x[2],x[3]))
+
+stability.colors <- b2_env$group.colors
+  stability.colors[which(b2_env$group.silhouette.coef < 0.5)] <- groupwise.group.colors.stability.1[b2_env$group.labels[names(which(b2_env$group.silhouette.coef < 0.5))]]
+  stability.colors[which(b2_env$group.silhouette.coef < 0)] <- groupwise.group.colors.stability.2[b2_env$group.labels[names(which(b2_env$group.silhouette.coef < 0))]]
+
+  
+pcm.module <- cor(b2_env[[paste("spot.list.", b2_env$preferences$standard.spot.modules,sep="")]]$spotdata )
+pcm.metadata <- cor(b2_env$metadata)
+```
+
+```{r, recapitulate the spanning tree, fig.height= 6, fig.width= 6}
+# Generate the tree only for metadata
+adj.matrix <- pcm.metadata
+adj.matrix[which(is.na(adj.matrix))] <- 0
+n <- "metagene data"
+
+# Create the graph from the adjacency matrix
+g <- graph.adjacency(-adj.matrix, weighted=TRUE, mode="undirected")
+stg <- minimum.spanning.tree(g)
+E(stg)$weight <- 1
+
+# Layout for the spanning tree
+layout <- layout_with_kk(stg)
+
+# Extract x and y locations
+xy_locations <- data.frame(x = layout[, 1], y = layout[, 2])
+
+# Plot the spanning tree
+par(mar=c(1,1,1,1))
+
+E(stg)$color <- apply(get.edgelist(stg), 1, function(x) mixColors(b2_env$group.colors[x[1]], b2_env$group.colors[x[2]]))
+
+plot(stg, layout=layout, vertex.size=5, vertex.label=rep("", ncol(adj.matrix)),
+     vertex.color=b2_env$group.colors, main=paste("Correlation Spanning Tree on", n))
+
+legend("bottomright", as.character(unique(b2_env$group.labels)), cex=0.5, text.col=b2_env$groupwise.group.colors, bg="white")
+
+box()
+```
+```{r}
+# Extract vertex names (sample labels)
+vertex_names <- V(stg)$name
+
+# Create a data frame with sample labels and their corresponding x and y coordinates
+xy_locations <- data.frame(
+  sample_label = vertex_names,
+  x = layout[, 1],
+  y = layout[, 2]
+)
+
+# View the matched data frame
+print(xy_locations)
+```
+```{r}
+# Create a data frame with sample labels and their corresponding x and y coordinates
+xy_locations <- data.frame(
+  sample_label = vertex_names,
+  x = layout[, 1],
+  y = layout[, 2]
+)
+
+# View the matched data frame
+print(xy_locations)
+
+```
+```{r, fig.height = 6, fig.width= 6}
+# Assuming xy_locations is your data frame
+ggplot(xy_locations, aes(x = x, y = y, label = sample_label)) +
+  geom_point(color = "blue", size = 3) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "X Coordinate",
+       y = "Y Coordinate") +
+  scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+```
+
+
+
+# combine the data with pheno data and assign new annotation
+```{r, assign_invasive branchs}
+branch2 <- xy_locations[(xy_locations$x >= -1.75) &
+                                  (xy_locations$x <= 0) &
+                                   (xy_locations$y >= 0) &
+                                   (xy_locations$y <= 3), ]$sample_label
+branch1 <- xy_locations[(xy_locations$x <= -0.5) & 
+                                   (xy_locations$y >= -1.5), ]$sample_label
+
+branch3 <- xy_locations[(xy_locations$x > 0) & 
+                                   (xy_locations$y >= -0.5), ]$sample_label
+
+# clean up branch1
+overlap <- intersect(branch1, branch2)
+overlap
+#
+
+xy_locations$branch <- "others"
+xy_locations[xy_locations$sample_label %in% branch1, "branch"] <- "branch1"
+xy_locations[xy_locations$sample_label %in% branch2, "branch"] <- "branch2"
+xy_locations[xy_locations$sample_label %in% branch3, "branch"] <- "branch3"
+
+table(xy_locations$branch)
+```
+
+```{r, fig.height= 6, fig.width= 8}
+# Assuming xy_locations is your data frame
+ggplot(xy_locations, aes(x = x, y = y, color = branch)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "X Coordinate",
+       y = "Y Coordinate") +
+  scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+```
+# at the end rerun the inferCNV for batch2 data only
+```{r, combine the data with pheno}
+tumor_pheno_b2$sample_label <- rownames(tumor_pheno_b2)
+# b2_pheno contains information about different branches
+b2_pheno <- merge(tumor_pheno_b2, xy_locations, by = "sample_label")
+table(b2_pheno$branch)
+
+# rename x and y colnames
+b2_pheno <- b2_pheno %>% 
+  rename(spanning_tree_x = x, spanning_tree_y = y)
+
+rownames(b2_pheno) <- b2_pheno$sample_label
+```
+# now recreate dds object with comparison within branchs
+```{r, dds creation with branches}
+# now create dds project
+b2_branch_dds <- DESeqDataSetFromMatrix(countData = round(tumor_raw_count_b2),
+                                 colData = b2_pheno,
+                                 design = ~ branch)
+# extract the normalized counts
+b2_branch_dds <- estimateSizeFactors(b2_branch_dds)
+b2_branch_norm <- counts(b2_branch_dds, normalize = T)
+b2_branch_log <- log2(b2_branch_norm + 1)
+```
+
+
+# now rerun SOM
+```{r, SOM input prep}
+# assign input
+exprs_data <- b2_branch_log
+
+group.info <- data.frame(
+  group.labels = b2_pheno$branch,
+  row.names = row.names(b2_pheno)
+)
+
+# assign color to each label
+group.info$group.colors = "unknown"
+
+group.info[group.info$group.labels == "others", "group.colors"] <- "steelblue"
+group.info[group.info$group.labels == "invasive_branch1", "group.colors"] <- "pink"
+group.info[group.info$group.labels == "invasive_branch2", "group.colors"] <- "orange"
+group.info[group.info$group.labels == "invasive_branch3", "group.colors"] <- "tomato"
+
+print(table(group.info$group.labels))
+print(table(group.info$group.colors))
+
+pheno_data_color <- AnnotatedDataFrame(data = group.info)
+#pheno_data_color
+b2_exprs_set <- ExpressionSet(assayData = exprs_data,
+                              phenoData = pheno_data_color)
+
+b2_exprs_set
+
+```
+
+```{r, create SOM envrionment}
+b2_branch_env <- opossom.new(list(dataset.name = "PCAI_batch2_tumor_branches_30x30_09082024", dim.1stLvlSom = 30))
+b2_branch_env$indata <- b2_exprs_set
+b2_branch_env$group.labels <- group.info$group.labels
+b2_branch_env$group.colors <- group.info$group.colors
+```
+
+```{r, run SOM}
+library(oposSOM)
+#opossom.run(b2_branch_env)
+```
+
+```{r assign annotation to different branches}
+# add the original annotation 
+ori_merged_pheno <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/GeoMX_data/PCAI_merged_pheno_05222024.csv", row.names = 1)
+
+ori_merged_tumor_b2 <- ori_merged_pheno[(ori_merged_pheno$batch_str == "Batch_2") & 
+                                          (ori_merged_pheno$composition_TV %in% selected_celltype) &
+                                          (ori_merged_pheno$histopathology %in% selected_hist), ]
+
+ori_merged_tumor_b2$sample_label <- rownames(ori_merged_tumor_b2)
+
+
+```
+
+```{r, output the data with branch annotation}
+b2_pheno_merged <- merge(ori_merged_tumor_b2, b2_pheno[, c("sample_label", "spanning_tree_x", "spanning_tree_y", "branch")], by = "sample_label")
+b2_pheno_merged$slide_rois <- paste0(b2_pheno_merged$slide.name, "_", b2_pheno_merged$roi_label)
+b2_pheno_merged
+
+#write.csv(b2_pheno_merged, "/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/script/PCAI_batch2_tumor_SOM_branches_pheno_09082024.csv", row.names = FALSE)
+
+```
+# match the data with clusters
+```{r input cluster annotation}
+cluster_anno <- read.csv("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/invasive_tumor_GeoMX_cluster.csv", row.names = 1)[, c("name", "cluster", "batch")]
+cluster_anno <- cluster_anno %>% 
+  rename(sample_label = name) 
+
+cluster_anno_b2 <- cluster_anno[cluster_anno["batch"] == "Batch_2", ]
+```
+
+# be carefull with the data merge
+```{r}
+in_cluster1 <- rownames(cluster_anno_b2[cluster_anno_b2$cluster == "1", ])
+in_cluster2 <- rownames(cluster_anno_b2[cluster_anno_b2$cluster == "2", ])
+in_cluster3 <- rownames(cluster_anno_b2[cluster_anno_b2$cluster == "3", ])
+
+b2_pheno_merged$cluster = "others"
+b2_pheno_merged[b2_pheno_merged$sample_label %in% in_cluster1, "cluster"] = "cluster1"
+b2_pheno_merged[b2_pheno_merged$sample_label %in% in_cluster2, "cluster"] = "cluster2"
+b2_pheno_merged[b2_pheno_merged$sample_label %in% in_cluster3, "cluster"] = "cluster3"
+
+table(b2_pheno_merged$cluster)
+
+#cluster_merge <- merge(b2_pheno_merged, cluster_anno_b2, by = "sample_label", all.x = T)
+#cluster_merge$cluster <- as.character(cluster_merge$cluster)
+```
+
+```{r, fig.height= 6, fig.width= 8}
+# Assuming xy_locations is your data frame
+ggplot(b2_pheno_merged, aes(x = spanning_tree_x, y = spanning_tree_y, color = cluster)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "X Coordinate",
+       y = "Y Coordinate") +
+  scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+```
+
+# the analysis starts from here
+
+
+# starting from here, read the annotation data
+```{r}
+b2_pheno_merged <- read.csv("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/PCAII_project_manuscript_preparation_2025/processed_data/PCAI_Set1A_tumor_SOM_branches_pheno_09082024.csv")
+
+rownames(b2_pheno_merged) <- b2_pheno_merged$sample_label
+b2_pheno_merged
+```
+
+
+
+```{r, fig.height= 6, fig.width= 8}
+# Define the specific values in 'slide_rois' to label
+label_values <- c("LSP13943_11", "LSP13943_14")  # Replace with the actual values
+
+ggplot(b2_pheno_merged, aes(x = spanning_tree_x, y = spanning_tree_y, color = branch)) +
+  geom_point(size = 4) +  # Points for each sample
+  geom_text(
+    data = b2_pheno_merged %>% dplyr::filter(slide_rois %in% label_values),  # Subset only rows to label
+    aes(label = slide_rois),  # Use 'slide_rois' column for labels
+    vjust = -0.5, hjust = 0.5, size = 3, color = "black"  # Adjust position and size
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Correlation Spanning Tree - Sample Locations",
+    x = "X Coordinate",
+    y = "Y Coordinate"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+```
+
+# now assign invasive branches which are RGP and VGP regions
+```{r invasive branches preparation}
+invasive_regions <- c("RGP", "VGP")
+table(b2_pheno_merged$histopathology)
+
+invasive_branch1 <- b2_pheno_merged[(b2_pheno_merged$branch == "branch1") & (b2_pheno_merged$histopathology %in% invasive_regions), ]$sample_label
+invasive_branch2 <- b2_pheno_merged[(b2_pheno_merged$branch == "branch3") & (b2_pheno_merged$histopathology %in% invasive_regions), ]$sample_label
+
+# check the length of the samples
+print(length(invasive_branch1))
+print(length(invasive_branch2))
+
+invasive_pheno <- b2_pheno_merged[rownames(b2_pheno_merged) %in% c(invasive_branch1, invasive_branch2), ]
+invasive_pheno
+
+# now subset the rawcount
+invasive_raw <- tumor_raw_count_b2[, c(invasive_branch1, invasive_branch2)]
+invasive_raw
+
+table(invasive_pheno$branch)
+
+invasive_pheno <- invasive_pheno[match(colnames(invasive_raw), rownames(invasive_pheno)), ]
+
+all(colnames(invasive_raw) == rownames(invasive_pheno))  # Should return TRUE
+```
+
+
+```{r}
+#sample_list <- colnames(invasive_raw)
+branch1_samples <- rownames(invasive_pheno[invasive_pheno$branch == "branch1", ])
+branch3_samples <- rownames(invasive_pheno[invasive_pheno$branch == "branch3", ])
+
+cibersort_tpm <- invasive_raw %>% 
+  rownames_to_column(var = "GeneSymbol") 
+  #%>% 
+  #rename_with(~ ifelse(. %in% branch1_samples, "branch1",
+   #                    ifelse(. %in% branch3_samples, "branch3", .)),
+    #          -GeneSymbol)
+
+# Get the current column names excluding 'GeneSymbol'
+current_sample_names <- colnames(cibersort_tpm)[-1]
+
+# Replace sample names with 'branch1' or 'branch3' based on their group
+# Initialize new column names by matching samples to branch1 and branch3
+new_column_names <- sapply(current_sample_names, function(sample) {
+  if (sample %in% branch1_samples) {
+    return("branch1")
+  } else if (sample %in% branch3_samples) {
+    return("branch3")
+  } else {
+    return(sample)  # Keep the original name if it doesn't belong to branch1 or branch3
+  }
+})
+
+# Assign the new names back to the data (preserving repeated names)
+colnames(cibersort_tpm)[-1] <- new_column_names
+
+# Check the result
+print(cibersort_tpm)
+  
+#write.table(cibersort_tpm, file = "branch_cibersort_signature_matrix_09302024.txt", sep = "\t", row.names =
+ #             FALSE, quote = FALSE)
+
+```
+
+
+
+
+```{r}
+# now creating DEG object 
+invasive_dds <-  DESeqDataSetFromMatrix(countData = round(invasive_raw),
+                                 colData = invasive_pheno,
+                                 design = ~ branch)
+
+invasive_dds <- DESeq(invasive_dds)
+vsd <- vst(invasive_dds, blind = FALSE)
+# comparison
+res <- results(invasive_dds, contrast = c("branch", "branch1", "branch3"))
+res <- res[order(res$padj), ]
+significant_genes <- rownames(res[which(res$padj <= 0.05), ])
+
+```
+
+
+# extract signatures
+```{r}
+# Only consider significant genes and then sort by log2FoldChange
+significant_res <- res[significant_genes, ]
+
+# Get top 100 upregulated genes for branch1 (log2FoldChange > 0)
+branch1_signature <- rownames(significant_res[significant_res$log2FoldChange > 0.7, ][1:100, ])  
+
+# Get top 100 upregulated genes for branch3 (log2FoldChange < 0)
+branch3_signature <- rownames(significant_res[significant_res$log2FoldChange < -0.6, ][1:100, ])
+# Map gene symbols to Entrez IDs
+# Create a list of lists with names
+gene_signatures <- list(
+  branch1_signature = branch1_signature,
+  branch3_signature = branch3_signature
+)
+
+# Assign meaningful names to each list element like the example
+names(gene_signatures) <- c("BRANCH1_SIGNATURE", "BRANCH3_SIGNATURE")
+
+branch1_signature
+
+library(EnsDb.Hsapiens.v79)
+```
+
+
+
+```{r}
+# now extract the normalized count data
+invasive_dds <- estimateSizeFactors(invasive_dds)
+invasive_norm <- counts(invasive_dds, normalize = T)
+invasive_log <-  as.data.frame(log2(invasive_norm + 1))
+invasive_log_matrix <- as.matrix(invasive_log)
+
+```
+
+
+
+```{r}
+invasive_log_matrix 
+source("test_script.R")
+source("score_gene_expression.R")
+# read the markers
+#human_DGM_markers <- readRDS("Human_DGM_Markers.rds")
+score_info <- compute_bulk_normalized_gene_set_scores(invasive_log_matrix, dgms)
+score_info
+
+```
+
+```{r}
+dgm_score_mat <- score_info$fg - score_info$bg
+dgm_score_mat
+```
+# generate boxplot comparison for each of them 
+
+```{r}
+dgm_score_df <- as.data.frame(dgm_score_mat)
+dgm_score_df
+```
+
+
+```{r}
+ATF_expr <- as.data.frame(t(invasive_log))
+
+ATF_expr
+
+comparison <- merge(invasive_pheno, ATF_expr, by = "row.names")
+
+rownames(comparison) <- comparison$Row.names
+
+comparison$Row.names <- NULL
+```
+
+# generate boxplot
+```{r}
+# Create the boxplot and stripplot for each column
+p <- ggplot(comparison, aes(x = branch, y = ATF3, fill = branch)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+  geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+  scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Customcolors for branches
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(comparison$ATF3, na.rm = TRUE) * 1.05) +  # Add p-value
+  theme_minimal() +
+  labs(title = paste("Comparison of", column, "\n   between branch1 and branch3"),
+       y = column, x = "Branch") +
+  theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+print(p)
+```
+
+
+```{r}
+# check MEL27
+comparison_mel27 <- comparison[comparison$case == "MEL27", ]
+comparison_mel27
+
+table(comparison_mel27$slide_rois)
+
+#cluster1 <- c("LSP13914_6", "LSP13914_7", "LSP13914_8", "LSP13914_9", "LSP13914_12")
+cluster3 <- c("LSP13914_6", "LSP13914_7", "LSP13914_8", "LSP13914_9", "LSP13914_11", "LSP13914_12", "LSP13914_5")
+
+
+cluster1 <- c("LSP13918_43", "LSP13918_45", "LSP13914_14", "LSP13918_29", "LSP13918_6", 
+              "LSP13918_7", "LSP13918_31")
+
+
+comparison_mel27$comparison <- "cluster2"
+comparison_mel27[comparison_mel27$slide_rois %in% cluster3, "comparison"] <- "cluster3"
+comparison_mel27[comparison_mel27$slide_rois %in% cluster1, "comparison"] <- "cluster1"
+
+
+table(comparison_mel27$comparison)
+
+```
+
+```{r, fig.height= 6, fig.width= 4}
+# Create the boxplot and stripplot for each column
+p_ATF3 <- ggplot(comparison_mel27, aes(x = comparison, y = ATF3, fill = comparison)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+  geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+  scale_fill_manual(values = c("cluster3" = "pink", "cluster1" = "skyblue")) +  # Customcolors for branches
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y= max(comparison_mel27$ATF3, na.rm = TRUE) * 1.05) +  # Add p-value
+  theme_minimal() +
+  labs(title = paste("Comparison of ATF3\n   between cluster1 and cluster3"),
+       y = "ATF3(log-transformed)", x = "Branch") +
+  theme(legend.position = "none")  # Hide legend for fill
+
+
+# Create the boxplot and stripplot for each column
+p_NGFR <- ggplot(comparison_mel27, aes(x = comparison, y = NGFR, fill = comparison)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+  geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+  scale_fill_manual(values = c("cluster3" = "pink", "cluster1" = "skyblue")) +  # Customcolors for branches
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y= max(comparison_mel27$NGFR, na.rm = TRUE) * 1.05) +  # Add p-value
+  theme_minimal() +
+  labs(title = paste("Comparison of NGFR\n between cluster1 and cluster3"),
+       y = "NGFR(log-transformed)", x = "Branch") +
+  theme(legend.position = "none")  # Hide legend for fill
+
+
+
+
+# Save the plot
+print(p_ATF3)
+print(p_NGFR)
+
+
+```
+
+# more geneset analysis
+
+```{r}
+# read Ponzniak signatures
+ponzniak_geneset <- read_csv("Ponzniak_signatures_2024.csv")
+table(ponzniak_geneset$cluster)
+```
+```{r}
+ponzniak_list <- split(ponzniak_geneset$gene, ponzniak_geneset$cluster)
+
+ponzniak_list <- ponzniak_list[!names(ponzniak_list) %in% c("Patient_specific_A", "Patient_specific_B")]
+
+# now perform gsva
+```
+
+```{r}
+ponzniak_gsva <- gsva(ssgseaParam(invasive_log_matrix, ponzniak_list), verbose = F)
+ponzniak_gsvaDF <- as.data.frame(t(ponzniak_gsva))
+ponzniak_gsvaDF
+```
+
+```{r, fig.height = 8, fig.width = 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(ponzniak_gsvaDF, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+# Start SVG device
+#pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/ponzniak_signature_analysis_heatmap.pdf", width = 12, height = 8)
+
+pheatmap(t(ponzniak_gsvaDF),
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= invasive_pheno[, c("histopathology", "Immune_TV", "branch")],
+         annotation_colors = list(branch = c("branch1" = "tomato",
+                                            "branch3" = "steelblue")),
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+#dev.off()
+```
+now try different method
+```{r}
+ponzniak_info <- compute_bulk_normalized_gene_set_scores(invasive_log_matrix, ponzniak_list)
+ponzniak_info
+```
+```{r, fig.height= 10, fig.width= 12}
+ponzniak_mat <- ponzniak_info$fg - ponzniak_info$bg
+ponzniakDF <- as.data.frame(ponzniak_mat)
+```
+
+```{r, fig.height = 8, fig.width = 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(t(ponzniakDF), method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/ponizniak_signature_collector_function_analysis_heatmap.pdf", width = 12, height = 8)
+
+pheatmap(ponzniakDF,
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = F,
+         clustering_callback = cl_cb,
+         annotation_col= invasive_pheno[, c("histopathology", "Immune_TV", "branch")],
+         annotation_colors = list(branch = c("branch1" = "tomato",
+                                            "branch3" = "steelblue")),
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+dev.off()
+```
+
+```{r}
+ponzniak_gsvaDF_merged <- merge(ponzniak_gsvaDF, invasive_pheno, by = "row.names")
+ponzniakDF_merged <- merge(as.data.frame(t(ponzniakDF)), invasive_pheno, by = "row.names")
+```
+
+
+```{r}
+ponzniak_gsvaDF_merged
+```
+
+
+
+```{r}
+# Create the boxplot and stripplot for each column
+p <- ggplot(ponzniak_gsvaDF_merged, aes(x = branch, y = Melanocytic, fill = branch)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+  geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+  scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Customcolors for branches
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(ponzniak_gsvaDF_merged$Melanocytic, na.rm = TRUE) * 1.05) +  # Add p-value
+  theme_minimal() +
+  labs(title = paste("Comparison of Melanocytic\n between branch1 and branch3"),
+       y = "Melanocytic", x = "Branch") +
+  theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+print(p)
+```
+
+
+
+```{r}
+# Create the boxplot and stripplot for each column
+p <- ggplot(ponzniakDF_merged, aes(x = branch, y = Melanocytic, fill = branch)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+  geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+  scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Customcolors for branches
+  stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(ponzniakDF_merged$Melanocytic, na.rm = TRUE) * 1.05) +  # Add p-value
+  theme_minimal() +
+  labs(title = paste("Comparison of Melanocytic\n between branch1 and branch3
+                     based collaborator function"),
+       y = "Melanocytic", x = "Branch") +
+  theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+print(p)
+```
+
+
+```{r, fig.height = 10, fig.width = 10}
+mel_colors <- c(
+  "MEL14" = "white",
+  "MEL15" = "aquamarine4", 
+  "MEL16" = "blue3", 
+  "MEL17" = "deeppink",
+  "MEL18" = "mistyrose2",
+  "MEL19" = "brown2", 
+  "MEL20" = "purple",
+  "MEL21" = "khaki",
+  "MEL23" = "palegreen", 
+  "MEL24" = "steelblue", 
+  "MEL25" = "tan",
+  "MEL26" = "orange",
+  "MEL27" = "yellow",
+  "MEL29" = "seagreen3", 
+  "MEL32" = "pink", 
+  "MEL33" = "powderblue",
+  "MEL34" = "cyan1",
+  "MEL35" = "black", 
+  "MEL37" = "grey", 
+  "MEL38" = "lightcyan1", 
+  "MEL39" = "lightpink3", 
+  "MEL40" = "firebrick1", 
+  "MEL42" = "magenta1", 
+  "MEL44" = "bisque", 
+  "MEL45" = "orange4", 
+  "MEL47" = "gold1", 
+  "MEL48" = "darkcyan", 
+  "MEL49" = "darkslateblue", 
+  "MEL50" = "deepskyblue3", 
+  "MEL52" = "azure3", 
+  "MEL53" = "peachpuff", 
+  "MEL54" = "plum1", 
+  "MEL55" = "royalblue", 
+  "MEL56" = "lemonchiffon3", 
+  "MEL58" = "tomato", 
+  "MEL64" = "yellowgreen", 
+  "MEL65" = "coral4", 
+  "MEL68" = "salmon", 
+  "MEL69" = "cornsilk"
+)
+
+
+
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(t(dgm_score_df), method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/dgm_signature_analysis_heatmap_case.pdf", width = 10, height = 10)
+
+pheatmap(dgm_score_df,
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = TRUE,
+         #clustering_callback = cl_cb,
+         annotation_col= invasive_pheno[, c("histopathology", "Immune_TV", "branch", "case")],
+         annotation_colors = list(branch = c("branch1" = "tomato",
+                                            "branch3" = "steelblue"),
+                                  case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+dev.off()
+```
+# boxplot
+```{r}
+dgm_scoreT <- as.data.frame(t(dgm_score_df))
+
+#invasive_branch1
+
+dgm_scoreT["branch"] <- "others"
+dgm_scoreT[branch1_samples, "branch"] <- "branch1"
+dgm_scoreT[branch3_samples, "branch"] <- "branch3"
+
+dgm_scoreT$branch <- factor(dgm_scoreT$branch, levels = c("branch1", "branch3"))
+table(dgm_scoreT$branch)
+
+colnames(dgm_scoreT)
+
+columns_to_plot <- names(dgm_scoreT)[!names(dgm_scoreT) == "branch"]
+columns_to_plot
+```
+
+
+```{r}
+library(ggpubr)
+
+# Iterate through the columns and create boxplots and stripplots with p-value
+for (column in columns_to_plot) {
+  
+  # Create the boxplot and stripplot for each column
+  p <- ggplot(dgm_scoreT, aes(x = branch, y = dgm_scoreT[[column]], fill = branch)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+    scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(dgm_scoreT[[column]], na.rm = TRUE) * 1.05) +  # Add p-value
+    theme_minimal() +
+    labs(title = paste("Comparison of", column, "\n   between branch1 and branch3"),
+         y = column, x = "Branch") +
+    theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+  print(p)
+  ggsave(filename = paste0("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/Comparison_", column, ".pdf"), plot = p, width = 4, height = 6)
+}
+```
+
+
+
+# extract the gene signatures for cybersort
+```{r}
+table(PCAI_merged_pheno$composition_TV)
+# subset the immune ROIs from batch2
+b2_immune_pheno <-PCAI_merged_pheno[(PCAI_merged_pheno$composition_TV == "immune") & (PCAI_merged_pheno$batch_str == "Batch_2"), ]
+# create column named slide_rois
+b2_immune_pheno$slide_rois <- paste0(b2_immune_pheno$slide.name, "_", b2_immune_pheno$roi_label)
+
+# identify slide_rois associated with branch 1 and 3
+tumor_branch1_rois <- invasive_pheno[invasive_pheno$branch == "branch1", "slide_rois"]
+tumor_branch3_rois <- invasive_pheno[invasive_pheno$branch == "branch3", "slide_rois"]
+
+b2_immune_pheno$branch <- "unknown"
+b2_immune_pheno[b2_immune_pheno$slide_rois %in% tumor_branch1_rois, "branch"] <- "branch1"
+b2_immune_pheno[b2_immune_pheno$slide_rois %in% tumor_branch3_rois, "branch"] <- "branch3"
+
+table(b2_immune_pheno$branch)
+# now manual match the unknown samples
+
+unknown_samples <- b2_immune_pheno[b2_immune_pheno$branch == "unknown", ]
+```
+
+
+
+```{r}
+write.csv(unknown_samples, "batch2_immune_ROIs_branch3_check_09302024.csv")
+```
+
+
+# check the batch2 data
+```{r}
+batch2_tumor_som <- load("PCAI_batch2_tumor_30x30_09082024.RData")
+```
+
+```{r}
+# I need to initiate the datta first
+data("opossom.genesets")
+```
+
+
+
+
+
+# now generate the normalized count data in comparison between branch1 and branch3
+```{r, select signatures}
+#library(oposSOM)
+signature_names <- names(opossom.genesets)
+#signature_names
+
+selected_signatures <- c(
+  "Landsberg_dedifferentiation_down", 
+  "Joensson_Melanoma Pigmentation subtype", 
+  "Harbst_melanoma_highgrade_up", 
+  "Tirosh_Genes in the MITF program", 
+  "Joensson_Melanoma Normal like subtype", 
+  "TCGA_melanoma_keratin_high", 
+  "Harbst_melanoma_lowgrade_up", 
+  "Landsberg_dedifferentiation_up"
+)
+
+# double check the items'
+missing_signatures <- selected_signatures[!selected_signatures %in% signature_names]
+missing_signatures
+
+```
+
+```{r}
+
+# Initialize a list to store converted genes
+selected_genes_converted <- list()
+
+# Loop through the selected signatures
+for (signature_name in selected_signatures) {
+  # Extract Ensembl gene IDs
+  genes <- opossom.genesets[[signature_name]]$Genes
+  selected_genes_converted[[signature_name]] <- genes
+  }
+
+# Checking the converted genes
+selected_genes_converted
+```
+
+
+```{r}
+library(EnsDb.Hsapiens.v79)
+# Initialize list to store converted gene symbols
+selected_genes_converted_symbols <- list()
+
+# Loop through the selected signatures and convert to gene symbols
+for (signature_name in selected_signatures) {
+  # Extract the Ensembl gene IDs
+  genes <- selected_genes_converted[[signature_name]]
+  print(length(genes))
+  converted_genes <- ensembldb::select(EnsDb.Hsapiens.v79, 
+                                       keys= genes, 
+                                       keytype = "GENEID", 
+                                       columns = c("SYMBOL","GENEID"))$SYMBOL
+  selected_genes_converted_symbols[[signature_name]] <- converted_genes 
+  }
+  
+# Check the structure of the converted genes
+str(selected_genes_converted_symbols)
+
+# Print the first few entries for inspection
+```
+
+
+signature for N vs P
+```{r}
+NvsP_signatures <- c("AMIT_EGF_RESPONSE_40_HELA", 
+                     "NAGASHIMA_EGF_SIGNALING_UP",
+                     "REACTOME_DNA_METHYLATION",
+                     "Reitmann_PA_MAPK-signaling", 
+                     "AMIT_EGF_RESPONSE_40_MCF10A", 
+                     "REACTOME_MEIOTIC_SYNAPSIS", 
+                     "REACTOME_DNA_DAMAGE_TELOMERE_STRESS_INDUCED_SENESCENCE", 
+                     "WANG_LSD1_TARGETS_DN", 
+                     #"skeletal muscle cell differentiation", 
+                     "PHONG_TNF_TARGETS_UP", 
+                     "REACTOME_OXIDATIVE_STRESS_INDUCED_SENESCENCE", 
+                     "VAQUERIZAS_Trachea_TF", 
+                     "Tirosh_Genes in the MITF program", 
+                     #"melanosome", 
+                     "Tirosh_melanoma specific genes", 
+                     "REACTOME_INNATE_IMMUNE_SYSTEM", 
+                     "REACTOME_NEUTROPHIL_DEGRANULATION", 
+                     "HALLMARK_INTERFERON_GAMMA_RESPONSE", 
+                     #"neutrophil degranulation", 
+                     "BROWNE_INTERFERON_RESPONSIVE_GENES", 
+                     #"MHC class II protein complex binding", 
+                     "Tirosh_genes preferentially expressed by Tregs", 
+                     "KEGG_LYSOSOME" 
+                     )
+
+
+
+
+PvsMIS_signatures <- c("peptide antigen binding", 
+                       "MHC class I protein complex", 
+                       "ER to Golgi transport vesicle membrane", 
+                       "Tirosh_Genes in the MITF program", 
+                       "type I interferon signaling pathway", 
+                       "melanosome", 
+                       "phagocytic vesicle membrane", 
+                       "mitochondrial inner membrane", 
+                       "interferon-gamma-mediated signaling pathway", 
+                       "Tirosh_melanoma specific genes", 
+                       "antigen processing and presentation", 
+                       "TAP1 binding", 
+                       "ONKEN_UVEAL_MELANOMA_UP", 
+                       "ENK_UV_RESPONSE_KERATINOCYTE_UP", 
+                       "HALLMARK_MYC_TARGETS_V1", 
+                       "WANG_TUMOR_INVASIVENESS_UP", 
+                       "MHC class I peptide loading complex", 
+                       "KEGG_OXIDATIVE_PHOSPHORYLATION",
+                       "DER_IFN_ALPHA_RESPONSE_UP", 
+                       "MHC class I protein binding", 
+                       "RADAEVA_RESPONSE_TO_IFNA1_UP", 
+                       "HALLMARK_OXIDATIVE_PHOSPHORYLATION", 
+                       "REACTOME_CYCLIN_A_CDK2_ASSOCIATED_EVENTS_AT_S_PHASE_ENTRY", 
+                       "G protein-coupled receptor activity", 
+                       "extracellular matrix", 
+                       "extracellular matrix organization", 
+                       "extracellular region", 
+                       "cell adhesion", 
+                       "extracellular matrix structural constituent", 
+                       "TCGA_melanoma_immune_high", 
+                       "Tirosh_CAF-cell specific genes", 
+                       "HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION", 
+                       "Tirosh_expression higher in CAFs than in T-cells", 
+                       "REACTOME_EXTRACELLULAR_MATRIX_ORGANIZATION", 
+                       "MIKKELSEN_NPC_HCP_WITH_H3K27ME3", 
+                       "Landsberg_dedifferentiation_up", 
+                       "collagen-containing extracellular matrix", 
+                       "REACTOME_COLLAGEN_CHAIN_TRIMERIZATION", 
+                       "Tirosh_T-cell specific genes-melanoma", 
+                       "inflammatory response")
+
+# double check the items'
+missing_signatures <- PvsMIS_signatures[!PvsMIS_signatures %in% signature_names]
+PvsMIS_signatures_f <- PvsMIS_signatures[!PvsMIS_signatures %in% missing_signatures]
+
+```
+
+```{r}
+# Convert Ensembl gene IDs to gene symbols for NvsP_signatures
+NvsP_genes_converted <- setNames(lapply(NvsP_signatures, function(signature_name) {
+  genes <- opossom.genesets[[signature_name]]$Genes
+  
+  # Convert Ensembl IDs to symbols
+  converted_genes <- ensembldb::select(EnsDb.Hsapiens.v79, 
+                                       keys = genes, 
+                                       keytype = "GENEID", 
+                                       columns = "SYMBOL")$SYMBOL
+  
+  return(converted_genes)
+}), NvsP_signatures)  # Use signature names as list names
+
+# Convert Ensembl gene IDs to gene symbols for PvsMIS_signatures
+PvsMIS_genes_converted <- setNames(lapply(PvsMIS_signatures_f, function(signature_name) {
+  genes <- opossom.genesets[[signature_name]]$Genes
+  
+  # Convert Ensembl IDs to symbols
+  converted_genes <- ensembldb::select(EnsDb.Hsapiens.v79, 
+                                       keys = genes, 
+                                       keytype = "GENEID", 
+                                       columns = "SYMBOL")$SYMBOL
+  
+  return(converted_genes)
+}), PvsMIS_signatures_f)  # Use signature names as list names
+
+# Print structure of the converted gene lists
+str(NvsP_genes_converted)
+str(PvsMIS_genes_converted)
+```
+run gsva
+
+
+```{r}
+table(b2_pheno_merged$histopathology)
+tumor_raw_count_b2
+
+# now creating DEG object 
+b2_dds <-  DESeqDataSetFromMatrix(countData = round(tumor_raw_count_b2),
+                                 colData = b2_pheno_merged,
+                                 design = ~ histopathology)
+
+# now create dds project
+b2_dds <- DESeq(b2_dds)
+
+# extract the normalized counts
+b2_dds <- estimateSizeFactors(b2_dds)
+b2_norm <- counts(b2_dds, normalize = T)
+b2_log <- log2(b2_norm + 1)
+b2_log_matrix <- as.matrix(b2_log)
+
+```
+
+# comparison between N, P and MIS
+```{r}
+
+N_P_pheno <- b2_pheno_merged[b2_pheno_merged$histopathology %in% c("N", "P"), ]
+N_P_log_matrix <- b2_log_matrix[, rownames(N_P_pheno)]
+
+P_MIS_pheno <- b2_pheno_merged[b2_pheno_merged$histopathology %in% c("P", "MIS"), ]
+P_MIS_log_matrix <- b2_log_matrix[, rownames(P_MIS_pheno)]
+
+
+NvsP_gsva <- gsva(ssgseaParam(N_P_log_matrix, NvsP_genes_converted), verbose = F)
+PvsMIS_gsva <- gsva(ssgseaParam(P_MIS_log_matrix, PvsMIS_genes_converted), verbose = F)
+
+NvsP_gsvaDF <- as.data.frame(t(NvsP_gsva))
+PvsMIS_gsvaDF <- as.data.frame(t(PvsMIS_gsva))
+
+NvsP_gsz <- as.data.frame(scale(NvsP_gsvaDF))
+PvsMIS_gsz <- as.data.frame(scale(PvsMIS_gsvaDF))
+
+# subset the data
+
+```
+```{r}
+N_samples <- rownames(N_P_pheno[N_P_pheno$histopathology == "N", ])
+P_samples <- rownames(N_P_pheno[N_P_pheno$histopathology == "P", ])
+
+print(N_samples)
+print(P_samples)
+
+# assign the condition
+NvsP_gsvaDF$condition <- "others"
+NvsP_gsvaDF[rownames(NvsP_gsvaDF) %in% N_samples, "condition"] <- "N"
+NvsP_gsvaDF[rownames(NvsP_gsvaDF) %in% P_samples, "condition"] <- "P"
+
+table(NvsP_gsvaDF$condition)
+
+```
+
+
+
+volcano plot
+```{r}
+# Ensure to exclude the 'condition' column when applying the differential function
+numeric_columns <- colnames(NvsP_gsvaDF)[!colnames(NvsP_gsvaDF) %in% "condition"]
+
+# Function to calculate log fold change and p-value
+calculate_differential <- function(data, pathway, group_col = "condition", group1 = "N", group2 = "P") {
+  # Use dplyr::filter to avoid conflicts with other packages
+  group1_data <- data %>% dplyr::filter(!!sym(group_col) == group1) %>% dplyr::select(pathway) %>% unlist()
+  group2_data <- data %>% dplyr::filter(!!sym(group_col) == group2) %>% dplyr::select(pathway) %>% unlist()
+  
+  # Calculate log fold change and p-value
+  if (length(group1_data) > 0 && length(group2_data) > 0) {
+    log2FoldChange <- log2(mean(group2_data, na.rm = TRUE) / mean(group1_data, na.rm = TRUE))
+    pvalue <- t.test(group1_data, group2_data)$p.value
+    return(c(log2FoldChange, pvalue))
+  } else {
+    return(c(NA, NA))  # Handle cases where groups are empty or contain only NA
+  }
+}
+
+# Apply the function across all numeric pathway columns
+results <- sapply(numeric_columns, function(pathway) {
+  calculate_differential(NvsP_gsvaDF, pathway)
+})
+
+# Transpose the results to create a proper dataframe
+results_df <- as.data.frame(t(results))
+colnames(results_df) <- c("log2FoldChange", "pvalue")
+
+# Display the results
+head(results_df)
+
+results_df$padj <- p.adjust(results_df$pvalue, method = "BH")
+
+# Create the volcano plot
+ggplot(results_df, aes(x = log2FoldChange, y = -log10(padj))) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Log2 Fold Change") +
+  ylab("-Log10 Adjusted P-value") +
+  geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dashed") +  # Significance threshold
+  geom_vline(xintercept = c(-1, 1), col = "blue", linetype = "dashed")  # LogFC threshold
+```
+
+```{r, fig.height= 8, fig.width = 10}
+library(EnhancedVolcano)
+
+
+results_clean <- na.omit(results_df)
+
+
+# Specify the filename for the SVG file
+#output_filename <- "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/B2_NvsP_DGEplot.pdf"
+ 
+
+# Start SVG device
+#pdf(output_filename, width = 7, height = 8) # Set appropriate width and height
+
+EnhancedVolcano(results_clean,
+    lab = rownames(results_clean),
+    title = 'Normal vs Precusor',
+    #selectLab = c('PMEL','CDK2', 
+     #             "CDHR1", "CDH1", "ITGA4"),
+    x = 'log2FoldChange',
+    y = 'pvalue',
+    labSize = 5.0, 
+    pointSize = 3.0, 
+    FCcutoff = 1,
+    pCutoff = 0.05,
+    subtitle = bquote('FDR cut off 0.001 and absolute LFC cut off 1'))
+
+#dev.off()
+```
+
+
+
+
+```{r}
+pathway <- "Tirosh_Genes in the MITF program"
+
+# Q-Q plot for the group "N"
+qqnorm(NvsP_gsvaDF[NvsP_gsvaDF$condition == "N", pathway], main = "Q-Q plot for Group N", col = "blue")
+qqline(NvsP_gsvaDF[NvsP_gsvaDF$condition == "N", pathway], col = "blue")
+
+# Q-Q plot for the group "P"
+qqnorm(NvsP_gsvaDF[NvsP_gsvaDF$condition == "P", pathway], main = "Q-Q plot for Group P", col = "red")
+qqline(NvsP_gsvaDF[NvsP_gsvaDF$condition == "P", pathway], col = "red")
+
+# Alternatively, you can plot both groups on the same Q-Q plot for comparison
+qqplot(
+  NvsP_gsvaDF[NvsP_gsvaDF$condition == "N", pathway],
+  NvsP_gsvaDF[NvsP_gsvaDF$condition == "P", pathway],
+  main = "Q-Q plot comparing Group N and Group P"
+)
+abline(0, 1, col = "black")  # Add a reference line
+```
+```{r, fig.height = 10, fig.width = 10}
+# Load required packages
+library(ggplot2)
+library(reshape2)
+
+# Assuming your data is in 'NvsP_gsvaDF' with pathways as columns
+# Reshape the data to long format for easier plotting
+gsva_long <- melt(NvsP_gsvaDF, id.vars = "condition", variable.name = "Tirosh_Genes in the MITF program", value.name = "gsva_score")
+
+# Generate a faceted scatter plot to show GSVA scores across pathways
+ggplot(gsva_long, aes(x = condition, y = gsva_score)) +
+  geom_boxplot() +
+  facet_wrap(~ `Tirosh_Genes in the MITF program`, scales = "free_y") +  # Facet by pathway
+  theme_minimal() +
+  xlab("Condition") +
+  ylab("GSVA Score") +
+  theme(strip.text = element_text(size = 10))
+```
+
+
+```{r figure 2 N vs P, fig.height= 6, fig.width= 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/NvsP_signature_analysis_heatmap.pdf", width = 12, height = 6)
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(NvsP_gsz, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+pheatmap(t(NvsP_gsz),
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= N_P_pheno[#"localization", 
+                                     "histopathology" 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     #"slide.name"
+                                     ],
+         annotation_colors = list(histopathology = c("N" = "steelblue",
+                                                     "P" = "forestgreen", 
+                                                     "MIS" = "pink", 
+                                                     "RGP" = "orange", 
+                                                     "VGP" = "tomato")), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+```
+
+
+```{r figure 2 P vs MIS, fig.height= 6, fig.width= 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/PvsMIS_signature_analysis_heatmap.pdf", width = 12, height = 6)
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(PvsMIS_gsz, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+pheatmap(t(PvsMIS_gsz),
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= P_MIS_pheno[#"localization", 
+                                     "histopathology" 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     #"slide.name"
+                                     ],
+         annotation_colors = list(histopathology = c("N" = "steelblue",
+                                                     "P" = "forestgreen", 
+                                                     "MIS" = "pink", 
+                                                     "RGP" = "orange", 
+                                                     "VGP" = "tomato")), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+```
+
+# now gsea 
+```{r}
+b2_gsva <- gsva(ssgseaParam(b2_log_matrix, selected_genes_converted_symbols), verbose = F)
+
+b2_gsvaDF <- as.data.frame(t(b2_gsva))
+
+b2_gsvaDF
+
+b2_gsz <- as.data.frame(scale(b2_gsvaDF))
+```
+
+```{r}
+b2_logT <- as.data.frame(t(b2_log))
+b2_logT
+
+selected_genes <- c("MLANA", "SOX9", "SOX10", "PMEL", "MITF", "NGFR", "AXL")
+
+b2_sub_log <- b2_logT[, selected_genes]
+
+b2_sub_log
+
+
+b2_sub_log$ID <- rownames(b2_sub_log)
+b2_gsz$ID <- rownames(b2_gsz)
+
+# Merge based on the "ID" column
+merged_df <- merge(b2_sub_log, b2_gsz, by = "ID", all = TRUE)
+
+# Restore rownames if needed
+rownames(merged_df) <- merged_df$ID
+
+merged_df$ID <- NULL  # Opti
+
+merged_df
+```
+```{r}
+colnames(merged_df)
+```
+
+
+```{r}
+library(ggpubr)
+
+my_data <- merged_df
+# Define the selected columns
+selected_columns <- c("MLANA", "SOX9", "SOX10", "PMEL", "MITF", "NGFR", "AXL")
+matched_columns <- c("Landsberg_dedifferentiation_down", 
+                    "Joensson_Melanoma Pigmentation subtype", 
+                    "Harbst_melanoma_highgrade_up", 
+                    "Tirosh_Genes in the MITF program", 
+                    "Joensson_Melanoma Normal like subtype",
+                    "TCGA_melanoma_keratin_high", "Harbst_melanoma_lowgrade_up", "Landsberg_dedifferentiation_up")
+
+# Define the output PDF file
+output_pdf <- "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/PCA_signature_analysis_heatmap_with_log.pdf"
+
+# Open the PDF device
+pdf(output_pdf, width = 7, height = 5)
+
+# Loop through each selected column
+for (x_col in selected_columns) {
+  # Loop through all other columns in the dataframe
+  for (y_col in setdiff(matched_columns, x_col)) {
+    # Use backticks around column names to handle spaces
+    p <- ggplot(my_data, aes(x = .data[[x_col]], y = .data[[y_col]])) +
+      geom_point(alpha = 0.7) +
+      theme_minimal() +
+      labs(title = paste("Scatter plot of", x_col, "vs", y_col),
+           x = x_col,
+           y = y_col) +
+      geom_smooth(method = "lm", se = FALSE, color = "blue") +
+      stat_cor(method = "pearson", label.x.npc = "left", label.y.npc = "top")
+
+    # Print the plot to the PDF
+    print(p)
+  }
+}
+
+# Close the PDF device
+dev.off()
+
+cat("Scatter plots with correlation and p-values saved to", output_pdf, "\n")
+```
+
+```{r}
+#merged_seg <- inner_join(tumor_s1_seg_deathDF, immune_s1_seg_deathDF, by = "ROILabel")
+
+# collected
+pairs(my_data)
+```
+
+```{r, fig.height= 8, fig.width= 10, size = 12}
+library(ggcorrplot)
+library(corrplot)
+
+
+merged_corr <- round(cor(merged_df), 1)
+
+pro.p.mat <- cor_pmat(merged_corr)
+
+pro_corr2 <- replace(merged_corr, is.na(merged_corr), 0)
+pro.p.mat2 <- replace(pro.p.mat, is.na(pro.p.mat), 0)
+
+
+col <- colorRampPalette(c("#4477AA", "#77AADD", "#FFFFFF", "#EE9988", "#BB4444"))
+
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/correlation_plot.pdf", width = 10, height = 10)
+
+corrplot(pro_corr2, 
+         #method = "color", 
+         col = col(100),  
+         #type = "upper", 
+         order = "hclust", 
+         #addrect = 5,
+         #rect.col = "red",
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col = "darkblue", tl.srt = 45, #Text label color and rotation
+         # Combine with significance level
+         p.mat = pro.p.mat2, sig.level = 0.05,
+         #insig = "blank",
+         # hide correlation coefficient on the principal diagonal
+         diag = TRUE)
+
+dev.off()
+
+cat("Correlation plot saved to correlation_plot.pdf\n")
+```
+
+# generate the pheatmap
+```{r figure 2 sub, fig.height= 6, fig.width= 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/PCA_signature_analysis_heatmap_with_log.pdf", width = 12, height = 6)
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(b2_gsz, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+pheatmap(t(b2_gsz),
+         scale = "row",
+         #border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 1,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= b2_pheno_merged[#"localization", 
+                                     "histopathology" 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     #"slide.name"
+                                     ],
+         annotation_colors = list(histopathology = c("N" = "steelblue",
+                                                     "P" = "forestgreen", 
+                                                     "MIS" = "pink", 
+                                                     "RGP" = "orange", 
+                                                     "VGP" = "tomato")), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+```
+
+# scatter plot
+```{r figure 2 sub, fig.height= 6, fig.width= 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/PCA_signature_analysis_heatmap_with_log.pdf", width = 12, height = 6)
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(merged_df, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+pheatmap(t(merged_df),
+         scale = "row",
+         #border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 1,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= b2_pheno_merged[#"localization", 
+                                     "histopathology" 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     #"slide.name"
+                                     ],
+         annotation_colors = list(histopathology = c("N" = "steelblue",
+                                                     "P" = "forestgreen", 
+                                                     "MIS" = "pink", 
+                                                     "RGP" = "orange", 
+                                                     "VGP" = "tomato")), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+```
+
+
+
+
+
+
+# run stage 2 data
+```{r}
+library(ComplexHeatmap)
+
+# Create the heatmap with specific legend parameters
+ht <- Heatmap(t(b2_gsz),
+              #name = "matrix_28",
+              col = color_scale,
+              clustering_distance_columns = "manhattan",
+              clustering_callback = cl_cb,
+              show_column_names = FALSE,
+              row_names_gp = gpar(fontsize = 10),
+              column_names_gp = gpar(fontsize = 10),
+              top_annotation = HeatmapAnnotation(
+                  histopathology = b2_pheno_merged["histopathology"],
+                  col = list(histopathology = c("N" = "steelblue",
+                                                "P" = "forestgreen", 
+                                                "MIS" = "pink", 
+                                                "RGP" = "orange", 
+                                                "VGP" = "tomato"))
+              ),
+              heatmap_legend_param = list(
+                  title = "Expression",
+                  at = seq(-4, 4, 2),  # Control breaks in the legend
+                  legend_height = unit(5, "cm")  # Adjust legend size
+              )
+)
+
+# Adjust layout by using the `draw` function
+draw(ht, heatmap_legend_side = "right", annotation_legend_side = "right")
+```
+
+
+```{r}
+library(ComplexHeatmap)
+library(dendextend)
+library(seriation)
+library(circlize)
+```
+
+
+```{r, fig.height = 10, fig.width= 10}
+# Define the color scale
+color_scale <- colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
+
+# Create the row annotation based on histopathology (since samples are rows)
+row_annotation <- rowAnnotation(
+  histopathology = b2_pheno_merged$histopathology,
+  col = list(histopathology = c(
+    "N" = "steelblue",
+    "P" = "forestgreen", 
+    "MIS" = "pink", 
+    "RGP" = "orange", 
+    "VGP" = "tomato"))
+)
+
+# Clustering callback function for optimal leaf ordering (OLO)
+cl_cb <- function(hcl, mat) {
+  dists <- dist(mat, method = "manhattan")  # Manhattan distance
+  hclust_olo <- reorder(hcl, dists)  # Optimal leaf ordering
+  return(hclust_olo)
+}
+
+# Perform hierarchical clustering on the rows (samples) with Manhattan distance
+dist_cols <- dist(b2_gsz, method = "manhattan")  # Distance between samples (rows)
+hclust_cols <- hclust(dist_cols, method = "complete")
+hclust_cols_olo <- cl_cb(hclust_cols, b2_gsz)  # Optimal leaf ordering for samples
+
+# Build the heatmap using ComplexHeatmap
+Heatmap(
+  b2_gsz,  # Data (samples as rows, signatures as columns)
+  name = "GSZ Score",  # Legend title
+  col = color_scale,  # Color scale
+  cluster_rows = as.dendrogram(hclust_cols_olo),  # Optimal leaf ordering for rows (samples)
+  cluster_columns = FALSE,  # Do not cluster columns (signatures)
+  show_row_names = FALSE, # Show row names (samples)
+  show_column_names = TRUE,  # Show column names (gene signatures)
+  row_dend_width = unit(15, "mm"),  # Dendrogram width for rows
+  left_annotation = row_annotation,  # Add the row annotation (samples)
+  heatmap_legend_param = list(title = "GSZ Score", title_gp = gpar(fontsize = 12), labels_gp = gpar(fontsize = 10)),
+  row_names_gp = gpar(fontsize = 10),  # Font size for row names (samples)
+  column_names_gp = gpar(fontsize = 10),  # Font size for column names (signatures)
+  height = unit(15, "cm"),  # Adjust the overall height of the heatmap
+  width = unit(10, "cm")  # Adjust the overall width of the heatmap
+)
+
+```
+
+
+```{r immune branch analysis}
+immune_pheno <- b2_immune_pheno[b2_immune_pheno$branch %in% c("branch1", "branch3"), ]
+immune_raw <- PCAI_merged_raw[, rownames(immune_pheno)]
+immune_raw
+
+# perform dds for this
+# now creating DEG object 
+immune_dds <-  DESeqDataSetFromMatrix(countData = round(immune_raw),
+                                 colData = immune_pheno,
+                                 design = ~ branch)
+
+immune_dds <- DESeq(immune_dds)
+immune_vsd <- vst(immune_dds, blind = FALSE)
+# comparison
+immune_res <- results(immune_dds, contrast = c("branch", "branch1", "branch3"))
+immune_res <- immune_res[order(immune_res$padj), ]
+immune_sig_genes <- immune_res[which(immune_res$padj <= 0.05), ]
+
+b1_up_genes <- rownames(immune_sig_genes[immune_sig_genes$log2FoldChange > 0, ])
+b3_up_genes <- rownames(immune_sig_genes[immune_sig_genes$log2FoldChange < 0, ])
+
+# identify the number of up and downregulated genes
+cat("Number of upregulated genes in branch1:", length(b1_up_genes), "\n")
+cat("Number of downregulated genes in branch1 (upregulated in branch3):", length(b3_up_genes), "\n")
+```
+```{r}
+convert_to_entrez <- function(gene_list) {
+    gene_conversion <- bitr(gene_list, fromType = "SYMBOL",
+                            toType = "ENTREZID",
+                            OrgDb = org.Hs.eg.db)
+    return(unique(gene_conversion$ENTREZID))
+}
+
+# Convert both gene sets
+up_genes_entrez <- convert_to_entrez(b1_up_genes)
+down_genes_entrez <- convert_to_entrez(b3_up_genes)
+
+# Check for conversion success
+cat("Upregulated genes converted to Entrez IDs:", length(up_genes_entrez), "\n")
+cat("Downregulated genes converted to Entrez IDs:", length(down_genes_entrez), "\n")
+```
+# define the pathways
+```{r, use MSigDB C7}
+# Load MSigDB C7 gene sets
+c7_gene_sets <- msigdbr(species = "Homo sapiens", category = "C7")
+c7_list <- split(c7_gene_sets$entrez_gene, c7_gene_sets$gs_name)  # Use Entrez IDs
+
+# Convert c7_list to TERM2GENE format (a data frame)
+c7_df <- data.frame(
+    TERM = rep(names(c7_list), times = sapply(c7_list, length)),
+    GENE = unlist(c7_list)
+)
+
+# Perform enrichment for upregulated genes
+c7_enrichment_up <- enricher(up_genes_entrez, TERM2GENE = c7_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+# Perform enrichment for downregulated genes
+c7_enrichment_down <- enricher(down_genes_entrez, TERM2GENE = c7_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+```
+
+```{r, use MSigDB C2}
+# Load MSigDB C7 gene sets
+c2_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2")
+c2_list <- split(c2_gene_sets$entrez_gene, c2_gene_sets$gs_name)  # Use Entrez IDs
+
+# Convert c7_list to TERM2GENE format (a data frame)
+c2_df <- data.frame(
+    TERM = rep(names(c2_list), times = sapply(c2_list, length)),
+    GENE = unlist(c2_list)
+)
+
+# Perform enrichment for upregulated genes
+c2_enrichment_up <- enricher(up_genes_entrez, TERM2GENE = c2_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+# Perform enrichment for downregulated genes
+c2_enrichment_down <- enricher(down_genes_entrez, TERM2GENE = c2_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+```
+
+
+
+```{r, KEGG pathway enrichment}
+# Perform KEGG enrichment for upregulated genes
+kegg_enrichment_up <- enrichKEGG(gene = up_genes_entrez,
+                                 organism = 'hsa',
+                                 pvalueCutoff = 0.05,
+                                 pAdjustMethod = "BH")
+
+# Perform KEGG enrichment for downregulated genes
+kegg_enrichment_down <- enrichKEGG(gene = down_genes_entrez,
+                                   organism = 'hsa',
+                                   pvalueCutoff = 0.05,
+                                   pAdjustMethod = "BH")
+```
+
+```{r, rectome pathway enrichement}
+# Perform Reactome enrichment for upregulated genes
+reactome_enrichment_up <- enrichPathway(gene = up_genes_entrez,
+                                       organism = "human",
+                                       pvalueCutoff = 0.05,
+                                       pAdjustMethod = "BH")
+
+# Perform Reactome enrichment for downregulated genes
+reactome_enrichment_down <- enrichPathway(gene = down_genes_entrez,
+                                         organism = "human",
+                                         pvalueCutoff = 0.05,
+                                         pAdjustMethod = "BH")
+```
+
+```{r, hallmark enrichment}
+library(ReactomePA)
+hallmark_gene_sets <- msigdbr(species = "Homo sapiens", category = "H")
+
+hallmark_list <- split(hallmark_gene_sets$entrez_gene, hallmark_gene_sets$gs_name)
+
+hallmark_df <- data.frame(
+    TERM = rep(names(hallmark_list), times = sapply(hallmark_list, length)),
+    GENE = unlist(hallmark_list)
+)
+
+# Perform enrichment for upregulated genes
+hallmark_enrichment_up <- enricher(up_genes_entrez, TERM2GENE = hallmark_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+
+# Perform enrichment for downregulated genes
+hallmark_enrichment_down <- enricher(down_genes_entrez, TERM2GENE = hallmark_df, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+
+```
+
+
+```{r, fig.height = 6, fig.width= 6}
+# Set the output file to save the plots as a high-resolution PDF
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/Enrichment_Analysis_Plots.pdf", width=8, height=8)  # Set the resolution and size of the PDF
+
+# Upregulated in branch1 - C7
+if (!is.null(c7_enrichment_up) && nrow(c7_enrichment_up) > 0) {
+    dotplot(c7_enrichment_up, showCategory=12, title="C7 Immunologic Signatures Enriched in Branch1")
+} else {
+    print("No significant C7 enrichment found for upregulated genes in branch1.")
+}
+
+# Downregulated in branch1 (Enriched in branch3) - C7
+if (!is.null(c7_enrichment_down) && nrow(c7_enrichment_down) > 0) {
+    dotplot(c7_enrichment_down, showCategory=12, title="C7 Immunologic Signatures Enriched in Branch3")
+} else {
+    print("No significant C7 enrichment found for downregulated genes in branch1.")
+}
+
+# Upregulated in branch1 - C2
+if (!is.null(c2_enrichment_up) && nrow(c2_enrichment_up) > 0) {
+    dotplot(c2_enrichment_up, showCategory=12, title="C2 Immunologic Signatures Enriched in Branch1")
+} else {
+    print("No significant C2 enrichment found for upregulated genes in branch1.")
+}
+
+# Downregulated in branch1 (Enriched in branch3) - C2
+if (!is.null(c2_enrichment_down) && nrow(c2_enrichment_down) > 0) {
+    dotplot(c2_enrichment_down, showCategory=12, title="C2 Immunologic Signatures Enriched in Branch3")
+} else {
+    print("No significant C2 enrichment found for downregulated genes in branch1.")
+}
+
+# Upregulated in branch1 - KEGG
+if (!is.null(kegg_enrichment_up) && nrow(kegg_enrichment_up) > 0) {
+    dotplot(kegg_enrichment_up, showCategory=12, title="KEGG Pathways Enriched in Branch1")
+} else {
+    print("No significant KEGG enrichment found for upregulated genes in branch1.")
+}
+
+# Downregulated in branch1 (Enriched in branch3) - KEGG
+if (!is.null(kegg_enrichment_down) && nrow(kegg_enrichment_down) > 0) {
+    dotplot(kegg_enrichment_down, showCategory=12, title="KEGG Pathways Enriched in Branch3")
+} else {
+    print("No significant KEGG enrichment found for downregulated genes in branch1.")
+}
+
+# Upregulated in branch1 - Reactome
+if (!is.null(reactome_enrichment_up) && nrow(reactome_enrichment_up) > 0) {
+    dotplot(reactome_enrichment_up, showCategory=12, title="Reactome Pathways Enriched in Branch1")
+} else {
+    print("No significant Reactome enrichment found for upregulated genes in branch1.")
+}
+
+# Downregulated in branch1 (Enriched in branch3) - Reactome
+if (!is.null(reactome_enrichment_down) && nrow(reactome_enrichment_down) > 0) {
+    dotplot(reactome_enrichment_down, showCategory=12, title="Reactome Pathways Enriched in Branch3")
+} else {
+    print("No significant Reactome enrichment found for downregulated genes in branch1.")
+}
+
+# Upregulated in branch1 - Hallmark
+if (!is.null(hallmark_enrichment_up) && nrow(hallmark_enrichment_up) > 0) {
+    dotplot(hallmark_enrichment_up, showCategory=12, title="Hallmark Immune Pathways Enriched in Branch1")
+} else {
+    print("No significant Hallmark enrichment found for upregulated genes in branch1.")
+}
+
+# Downregulated in branch1 (Enriched in branch3) - Hallmark
+if (!is.null(hallmark_enrichment_down) && nrow(hallmark_enrichment_down) > 0) {
+    dotplot(hallmark_enrichment_down, showCategory=12, title="Hallmark Immune Pathways Enriched in Branch3")
+} else {
+    print("No significant Hallmark enrichment found for downregulated genes in branch1.")
+}
+
+# Close the PDF device to save the file
+dev.off()
+```
+# now import paper based pathways particularly for immun
+```{r}
+# Convert the list to TERM2GENE format
+TERM2GENE <- data.frame(
+    TERM = rep(names(immune_geneSig_list), sapply(immune_geneSig_list, length)),
+    GENE = unlist(immune_geneSig_list)
+)
+
+# Inspect the TERM2GENE data frame
+str(TERM2GENE)
+
+immune_enrichment_up <- enricher(up_genes_entrez, TERM2GENE = TERM2GENE, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+immune_enrichment_down <- enricher(down_genes_entrez, TERM2GENE = TERM2GENE, pAdjustMethod = "BH", qvalueCutoff = 0.05)
+
+# no gene mapped
+
+```
+
+```{r}
+immune_norm_counts <- counts(immune_dds, normalized = T)
+immune_log <- log2(immune_norm_counts + 1)
+
+immune_log_matrix <- as.matrix(immune_log)
+
+Immune_gsva <- gsva(ssgseaParam(immune_log_matrix, immune_geneSig_list), verbose = F)
+
+Immune_gsvaDF <- as.data.frame(t(Immune_gsva))
+
+Immune_gsvaDF
+#IO_gsvaDF$PATIENT_ID <- rownames(IO_gsvaDF)
+```
+
+
+```{r, fig.height= 10, fig.width= 10}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/Immune_Analysis_Plots.pdf", width = 8, height = 8)
+
+pheatmap(t(Immune_gsvaDF),
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 15, 
+         treeheight_col = 15,
+         color = color_scale, 
+         breaks = breaks_list, 
+         annotation_col= immune_pheno[, c(#"localization", 
+                                     "histopathology", 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     "slide.name", "branch")],
+         annotation_colors = list(branch = c("branch1" = "tomato",
+                                                     "branch3" = "skyblue")), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T)
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+
+
+print(pheatmap_result)
+```
+
+```{r}
+immune_branch1_samples <- rownames(immune_pheno[immune_pheno$branch == "branch1", ])
+immune_branch3_samples <- rownames(immune_pheno[immune_pheno$branch == "branch3", ])
+```
+
+
+# now do boxplot for all of them
+```{r}
+Immune_gsvaDF$branch <- "unknown"
+Immune_gsvaDF[rownames(Immune_gsvaDF) %in% immune_branch1_samples, "branch"] <- "branch1"
+Immune_gsvaDF[rownames(Immune_gsvaDF) %in% immune_branch3_samples, "branch"] <- "branch3"
+
+table(Immune_gsvaDF$branch)
+```
+
+```{r}
+library(ggpubr)
+
+# Assuming your data is in a data frame called `data`
+# Ensure that "branch" is a factor
+Immune_gsvaDF$branch <- factor(Immune_gsvaDF$branch, levels = c("branch1", "branch3"))
+
+# List of columns for comparison
+columns_to_plot <- c("Antitumor cytokines", "B cells", "Cancer-associated fibroblasts", 
+                     "Checkpoint molecules", "Co-stimulatory ligands", "Co-stimulatory receptors", 
+                     "Effector cell traffic", "Effector cells", "Endothelium", "Granulocyte traffic", 
+                     "Immune Suppression by Myeloid Cells", "M1 signature", "Macrophage and DC traffic", 
+                     "Matrix", "Matrix remodeling", "MHCI", "MHCII", "Myeloid cells traffic", 
+                     "Neutrophil signature", "NK cells", "Protumor cytokines", "T cells", 
+                     "Th1 signature", "Th2 signature", "Treg", "Treg and Th2 traffic", 
+                     "Tumor proliferation rate", "Tumor-associated Macrophages")
+
+# Iterate through the columns and create boxplots and stripplots with p-value
+for (column in columns_to_plot) {
+  
+  # Create the boxplot and stripplot for each column
+  p <- ggplot(Immune_gsvaDF, aes(x = branch, y = Immune_gsvaDF[[column]], fill = branch)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+    scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(Immune_gsvaDF[[column]], na.rm = TRUE) * 1.05) +  # Add p-value
+    theme_minimal() +
+    labs(title = paste("Comparison of", column, "\n   between branch1 and branch3"),
+         y = column, x = "Branch") +
+    theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+  print(p)
+  ggsave(filename = paste0("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/Comparison_", column, ".pdf"), plot = p, width = 4, height = 6)
+}
+```
+
+
+# access the TCGA data for primary and mets comparison
+```{r}
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/skcm_tcga_gdc/")
+
+skcm_tpm <- read.csv("data_mrna_seq_tpm.txt", sep = "\t", row.names = 1)
+head(skcm_tpm)
+
+# Convert Entrez Gene IDs to Gene Symbols
+entrez_ids <- rownames(skcm_tpm)
+gene_symbols <- mapIds(org.Hs.eg.db, keys = entrez_ids, column = "SYMBOL", keytype = "ENTREZID", multiVals = "first")
+
+# 1. Check if the lengths of the Entrez IDs and gene_symbols match
+if(length(rownames(skcm_tpm)) != length(gene_symbols)) {
+  stop("The length of Entrez IDs and gene symbols do not match!")
+}
+
+# 2. Create a data frame with Entrez IDs, Gene Symbols, and skcm_tpm data
+skcm_tpm_with_symbols <- data.frame(Entrez_ID = rownames(skcm_tpm), Gene_Symbol = gene_symbols, skcm_tpm)
+
+# 3. Remove rows with NA gene symbols
+skcm_tpm_filtered <- na.omit(skcm_tpm_with_symbols)
+
+# 4. Assign Gene_Symbol as row names and remove the 'Entrez_ID' and 'Gene_Symbol' columns
+rownames(skcm_tpm_filtered) <- skcm_tpm_filtered$Gene_Symbol
+skcm_tpm_filtered <- skcm_tpm_filtered[ , !(names(skcm_tpm_filtered) %in% c("Entrez_ID", "Gene_Symbol"))]
+
+# 5. Check the updated dataset
+# 1. Move the rownames (gene symbols) into a new column named 'Gene'
+skcm_tpm_filtered$Gene <- rownames(skcm_tpm_filtered)
+
+# 2. Remove the rownames
+rownames(skcm_tpm_filtered) <- NULL
+
+# 3. Reorder the columns so that 'Gene' is the first column
+skcm_tpm_filtered <- skcm_tpm_filtered[, c("Gene", colnames(skcm_tpm_filtered)[colnames(skcm_tpm_filtered) != "Gene"])]
+
+# 4. Write the data frame to a .txt file
+write.table(skcm_tpm_filtered, file = "skcm_tpm_filtered.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+```
+# now read skcm clinical data
+
+
+```{r}
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/skcm_tcga_gdc/")
+skcm_clinical <- read.csv("data_clinical_sample.txt", sep = "\t", comment.char = "#")
+skcm_clinical
+
+```
+
+
+
+# access the skcm data for NR and R comparison
+```{r import and organized the data}
+# set the working directory
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/published_projects/Project6_IO/publication_prep/")
+# load the RNA and clinical dataset
+# Load the data
+IO_tpm <- read.csv("PublicData/mel_dfci_2019/data_RNA_Seq_expression_tpm.txt", sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+# Drop the 'Entrez_Gene_Id' column
+IO_tpm <- IO_tpm[, !names(IO_tpm) %in% "Entrez_Gene_Id"]
+
+duplicated_hugo <- duplicated(IO_tpm$Hugo_Symbol)
+# 1-Mar and 2-Mar
+# Modify only the duplicated Hugo_Symbol entries by appending "_2"
+IO_tpm$Hugo_Symbol[duplicated_hugo] <- paste0(IO_tpm$Hugo_Symbol[duplicated_hugo], "_2")
+
+# Set the Hugo_Symbol as row names now that duplicates are resolved
+rownames(IO_tpm) <- IO_tpm$Hugo_Symbol
+
+# Optionally, drop the Hugo_Symbol column if it's now set as rownames
+IO_tpm <- IO_tpm[, !names(IO_tpm) %in% "Hugo_Symbol"]
+
+
+clinical_data <- read.csv("PublicData/mel_dfci_2019/data_clinical_patient.txt", sep = "\t", comment.char = "#")
+dfci_purity_data <- read.csv("PublicData/mel_dfci_2019/data_clinical_sample.txt", sep = "\t", comment.char = "#")
+
+dfci_clinical_merged <- merge(clinical_data, dfci_purity_data, by = "PATIENT_ID")
+
+dfci_clinical_merged
+```
+
+```{r}
+# Ensure that both selected_samples and IO_tpm column names are characters with no extra spaces
+# Check for samples in selected_samples that are not in IO_tpm column names
+missing_samples <- setdiff(selected_samples, colnames(IO_tpm))
+missing_samples
+```
+
+
+```{r}
+# only select skin samples
+dfci_skin_purity <- dfci_clinical_merged[dfci_clinical_merged$PRIMARY_TYPE == "skin", ]
+
+skin_samples <- dfci_skin_purity$SAMPLE_ID
+
+skin_samples <- trimws(as.character(skin_samples))
+colnames(IO_tpm) <- trimws(as.character(colnames(IO_tpm)))
+
+matched_samples <- intersect(skin_samples, colnames(IO_tpm))
+
+print(length(matched_samples))
+
+matched_clinical <- dfci_skin_purity[dfci_skin_purity$SAMPLE_ID %in% matched_samples, ]
+
+# Data clean and extract the features
+matched_clinical<- matched_clinical %>% 
+  dplyr::filter(BR %in% c("Complete Response", "Partial Response", "Progressive Disease")) %>% 
+  mutate(response = if_else(BR == "Progressive Disease", "NR", "R")) %>% 
+  mutate(EVENT = if_else(PFS_STATUS == "1:PROGRESSION", 1, 0)) %>% 
+  dplyr::select("PATIENT_ID", "SAMPLE_ID", "response", "BR", "PFS_STATUS", "EVENT", "PFS_MONTHS", "PURITY")
+
+matched_skin_tpm <- IO_tpm[, matched_clinical$SAMPLE_ID]
+
+gene_names <- rownames(matched_skin_tpm)
+
+
+numeric_IO_skin_tpm <- as.data.frame(lapply(matched_skin_tpm, function(x) as.numeric(as.character(x))))
+
+str(numeric_IO_skin_tpm)
+
+numeric_IO_skin_tpm
+# If you have gene names in the first column that you want to keep as rownames:
+rownames(numeric_IO_skin_tpm) <- gene_names
+# Apply log2 transformation (log2(TPM + 1)) to the numeric data
+log_IO_skin_tpm <- log2(numeric_IO_skin_tpm + 1)
+# View the transformed data
+head(log_IO_skin_tpm)
+
+```
+
+
+
+```{r}
+# Adjust expression data by regressing out the purity for each gene
+adjusted_tpm <- log_IO_skin_tpm   # Create a copy for adjusted data
+
+for (gene in rownames(log_IO_skin_tpm)) {
+  # Regress out the purity from each gene's expression
+  fit <- lm(as.numeric(log_IO_skin_tpm[gene, ]) ~ matched_clinical$PURITY)
+  residuals <- resid(fit)
+  
+  # Replace the original expression values with the residuals (purity-adjusted values)
+  adjusted_tpm[gene, ] <- residuals
+}
+
+```
+
+
+
+
+
+```{r}
+IO_branch_gsva<- gsva(ssgseaParam(as.matrix(adjusted_tpm), gene_signatures), verbose = F)
+IO_branch_gsvaDF <- as.data.frame(t(IO_branch_gsva))
+
+IO_branch_gsvaDF$SAMPLE_ID <- rownames(IO_branch_gsvaDF)
+
+IO_branch_gsvaDF
+
+```
+
+```{r}
+matched_clinical_merged <- merge(matched_clinical, IO_branch_gsvaDF, by = "SAMPLE_ID")
+table(matched_clinical_merged$response)
+
+```
+
+
+```{r, fig.height= 4, fig.width= 3}
+# Create the boxplot and stripplot for BRANCH1_SIGNATURE
+branch1 <- ggplot(matched_clinical_merged, aes(x = response, y = BRANCH1_SIGNATURE, fill = response)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("NR" = "pink", "R" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(matched_clinical_merged$BRANCH1_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH1 \nNR vs R",
+         y = "BRANCH1_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+
+branch3 <- ggplot(matched_clinical_merged, aes(x = response, y = BRANCH3_SIGNATURE, fill = response)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("NR" = "pink", "R" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(matched_clinical_merged$BRANCH3_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH3 \nNR vs R",
+         y = "BRANCH3_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1_NRvsR_purity_adjusted.pdf", plot = branch1, width = 3, height = 4, device = "pdf", dpi = 300)
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch3_NRvsR_purity_adjusted.pdf", plot = branch3, width = 3, height = 4, device = "pdf", dpi = 300)
+
+
+# Print the plot
+print(branch1)
+print(branch3)
+```
+
+```{r}
+# 1. Transpose the data
+cibersort_dfci2019 <- as.data.frame(t(numeric_tTMP))
+
+# 2. Add the gene names as a new column
+cibersort_dfci2019$Gene <- rownames(cibersort_dfci2019)
+
+# 3. Reorder the columns so that 'Gene' is the first column
+cibersort_dfci2019 <- cibersort_dfci2019[, c("Gene", colnames(cibersort_dfci2019)[colnames(cibersort_dfci2019) != "Gene"])]
+
+# 4. Write to a txt file in the correct format for CIBERSORT
+write.table(cibersort_dfci2019, file = "dfci_tpm_cibersort_input.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+```
+
+```{r}
+table(skcm_clinical$SAMPLE_TYPE)
+rownames(skcm_clinical) <- gsub("-", ".", skcm_clinical$SAMPLE_ID)
+
+# Check the rownames
+head(rownames(skcm_clinical))
+
+# Subset primary solid tumor samples
+primary_tumor <- rownames(skcm_clinical[skcm_clinical$SAMPLE_TYPE == "Primary solid Tumor", ])
+
+# Subset metastatic tumor samples
+mets_tumor <- rownames(skcm_clinical[skcm_clinical$SAMPLE_TYPE == "Metastatic", ])
+```
+
+# read the absolute result
+```{r, skcm}
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/")
+skcm_cibersort <- read.csv("CIBERSORTx_skcm_branch_09302024.csv")[, c("Mixture", "branch1", "branch3")]
+skcm_ciber_f <- skcm_cibersort[skcm_cibersort$Mixture %in% c(primary_tumor, mets_tumor), ]
+skcm_ciber_f$mets <- "unknown"
+skcm_ciber_f[skcm_ciber_f$Mixture %in% primary_tumor, "mets"] <- "primary"
+skcm_ciber_f[skcm_ciber_f$Mixture %in% mets_tumor, "mets"] <- "metastatic"
+
+table(skcm_ciber_f$mets)
+```
+decon looks really bad, now simply do signatue analysis
+```{r}
+
+head(skcm_tpm_filtered)
+rownames(skcm_tpm_filtered) <- skcm_tpm_filtered$Gene
+skcm_tpm_filtered$Gene <- NULL
+
+log_skcm_tpm <- log2(skcm_tpm_filtered + 1) 
+log_skcm_tpm
+```
+
+
+
+```{r}
+tpm_core_ids <- sub("(TCGA.[^.]+.[^.]+).[A-Z0-9]+", "\\1", colnames(skcm_tpm_filtered))
+colnames(skcm_tpm_filtered) <- tpm_core_ids
+
+```
+
+
+
+```{r}
+setwd("/Users/yshi797/Dropbox (Partners HealthCare)/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/")
+skcm_purity_data <- read.csv("mat_TCGA.tsv", sep = "\t")
+# Extract the core ID from the `purity_sample_barcodes`
+# Use a simpler approach to extract only the part starting with 'TCGA' and ending with the third part of the code.
+# Extract core IDs from purity data
+purity_core_ids <- sapply(skcm_purity_data$Tumor_Sample_Barcode, function(x) {
+  # Remove "SKCM-" prefix
+  x <- sub("^SKCM-", "", x)
+  # Split by hyphens
+  parts <- strsplit(x, "-")[[1]]
+  # Extract the first three parts (TCGA, XX, XXXX)
+  core_id <- paste(parts[1:3], collapse = ".")
+  return(core_id)
+})
+
+# Print the first few purity core IDs
+cat("First few Purity Core IDs:\n")
+print(head(purity_core_ids))
+
+
+```
+
+```{r}
+length(tpm_core_ids)
+```
+
+
+```{r}
+skcm_purity_data$core_id <- purity_core_ids
+skcm_purity_data[, c("Tumor_Sample_Barcode", "core_id")]
+
+skcm_purity_data_f <- skcm_purity_data[skcm_purity_data$core_id %in% tpm_core_ids, ]
+
+skcm_tpm_match <- skcm_tpm_filtered[, skcm_purity_data_f$core_id]
+
+skcm_purity_data_f
+```
+
+
+
+```{r}
+log_tpm <- log2(skcm_tpm_match + 1)
+skcm_purity_data_f<- skcm_purity_data_f[match(colnames(skcm_tpm_match), skcm_purity_data_f$core_id),]
+skcm_purity_data_f
+
+```
+
+```{r}
+# Adjust expression data by regressing out the purity for each gene
+adjusted_tpm <- log_tpm  # Create a copy for adjusted data
+
+for (gene in rownames(log_tpm)) {
+  # Regress out the purity from each gene's expression
+  fit <- lm(as.numeric(log_tpm[gene, ]) ~ purity_df$purity)
+  residuals <- resid(fit)
+  
+  # Replace the original expression values with the residuals (purity-adjusted values)
+  adjusted_tpm[gene, ] <- residuals
+}
+```
+
+
+
+
+```{r}
+# Find matching core IDs
+matching_core_ids <- intersect(tpm_core_ids, purity_core_ids)
+num_matches <- length(matching_core_ids)
+
+# Display the number of matches and the matching IDs
+cat("Number of matching core IDs:", num_matches, "\n")
+cat("Matching Core IDs:\n")
+print(matching_core_ids)
+```
+
+
+
+boxplot comparison
+```{r, branch1 absolute}
+ggbetweenstats(data = skcm_ciber_f,
+               x = mets,
+               y = branch3,
+               messages = F,
+               bf.message = F,
+               mean.size = 2,
+               mean.color = "black",
+               ylab = "branch1 signature",
+               pairwise.comparisons = FALSE,
+               results.subtile = FALSE,
+               centrality.label.args = list(size = 4),
+               ggsignif.args = list(textsize = 4, tip_length = 0.01)) + 
+                theme(axis.title.y.right = element_blank(), 
+                          axis.text.y.right = element_blank(), 
+                          axis.ticks.y.right = element_blank(),
+                          text = element_text(size = 12),       # Increase overall font size
+                          axis.title = element_text(size = 12), # Increase axis titles font size
+                          axis.text = element_text(size = 12))
+                          #geom_signif(comparisons = list(c("Tumor", "Immune")), test.args = list(exact = FALSE)    
+```
+
+```{r}
+skcm_gsva <- gsva(ssgseaParam(as.matrix(log_skcm_tpm), gene_signatures), verbose = F)
+skcm_gsvaDF <- as.data.frame(t(skcm_gsva))
+
+skcm_gsvaDF$mets <- "unknown"
+skcm_gsvaDF[rownames(skcm_gsvaDF) %in% primary_tumor, "mets"] <- "primary"
+skcm_gsvaDF[rownames(skcm_gsvaDF) %in% mets_tumor, "mets"] <- "metastatic"
+skcm_gsvaDF <- skcm_gsvaDF[skcm_gsvaDF$mets != "unknown", ]
+
+table(skcm_gsvaDF$mets)
+
+```
+
+
+```{r, fig.height= 4, fig.width= 3}
+# Create the boxplot and stripplot for BRANCH1_SIGNATURE
+branch1 <- ggplot(skcm_gsvaDF, aes(x = mets, y = BRANCH1_SIGNATURE, fill = mets)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("metastatic" = "pink", "primary" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(skcm_gsvaDF$BRANCH1_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH1 \nPrimary vs Metastatic Tumors",
+         y = "BRANCH1_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+
+branch3 <- ggplot(skcm_gsvaDF, aes(x = mets, y = BRANCH3_SIGNATURE, fill = mets)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("metastatic" = "pink", "primary" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(skcm_gsvaDF$BRANCH3_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH3 \nPrimary vs Metastatic Tumors",
+         y = "BRANCH3_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1_PvsM.pdf", plot = branch1, width = 3, height = 4, device = "pdf", dpi = 300)
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch3_PvsM.pdf", plot = branch3, width = 3, height = 4, device = "pdf", dpi = 300)
+
+
+# Print the plot
+print(branch1)
+print(branch3)
+```
+
+do GSVA calculation
+```{r}
+IO_gsva <- gsva(ssgseaParam(as.matrix(t(log_tTMP)), gene_signatures), verbose = F)
+IO_gsvaDF <- as.data.frame(t(IO_gsva))
+IO_gsvaDF$PATIENT_ID <- rownames(IO_gsvaDF)
+```
+
+
+
+
+```{r}
+# Data merging
+mergedDF <- merge(meta_data, IO_gsvaDF, by = "PATIENT_ID", all = FALSE)
+colnames(mergedDF)[1] <- "Patient_ID"
+rownames(mergedDF) <- mergedDF$Patient_ID
+
+mergedDF
+```
+
+
+```{r}
+# Data clean and extract the features
+mergedDF <- mergedDF %>% 
+  filter(BR %in% c("Complete Response", "Partial Response", "Progressive Disease")) %>% 
+  mutate(response = if_else(BR == "Progressive Disease", "NR", "R")) %>% 
+  mutate(EVENT = if_else(PFS_STATUS == "1:PROGRESSION", 1, 0)) %>% 
+  dplyr::select("Patient_ID", "response", "BR", "PFS_STATUS", "EVENT", "PFS_MONTHS", "BRANCH1_SIGNATURE", "BRANCH3_SIGNATURE") 
+
+mergedDF
+```
+
+
+```{r nr vs r, fig.height= 4, fig.width= 3}
+# Create the boxplot and stripplot for BRANCH1_SIGNATURE
+dfci_branch1 <- ggplot(mergedDF, aes(x = response, y = BRANCH1_SIGNATURE, fill = response)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("NR" = "orange", "R" = "lightgreen")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(mergedDF$BRANCH1_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH1 \nNR vs R",
+         y = "BRANCH1_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+
+dfci_branch3 <- ggplot(mergedDF, aes(x = response, y = BRANCH3_SIGNATURE, fill = response)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 1) +  # Stripplot
+    scale_fill_manual(values = c("NR" = "orange", "R" = "lightgreen")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(mergedDF$BRANCH3_SIGNATURE, na.rm = TRUE) * 1.05) +  # Add p-value
+    labs(title = "Comparison of BRANCH3 \nNR vs R",
+         y = "BRANCH3_SIGNATURE", x = "Tumor Type") +  # Adjust title and axis labels
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),  # White background
+        plot.background = element_rect(fill = "white", color = NA),   # White plot background
+        panel.grid.major = element_blank(),                           # Remove major gridlines
+        panel.grid.minor = element_blank(),                           # Remove minor gridlines
+        axis.line = element_line(color = "black"),                    # Show x and y axis lines
+        axis.ticks = element_line(color = "black"),                   # Show axis ticks
+        axis.text = element_text(color = "black"),                    # Ensure axis text is black
+        legend.position = "none"                                      # Hide legend for fill
+    )
+
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1_NvsNR.pdf", plot = dfci_branch1, width = 3, height = 4, device = "pdf", dpi = 300)
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch3_NvsNR.pdf", plot = dfci_branch3, width = 3, height = 4, device = "pdf", dpi = 300)
+
+# Print the plot
+print(dfci_branch1)
+print(dfci_branch3)
+
+
+```
+
+
+
+# extract the count
+```{r}
+# output the normalized and log-transformed data
+invasive_dds <- estimateSizeFactors(invasive_dds)
+invasive_norm <- counts(invasive_dds, normalize = T)
+invasive_log <- log2(invasive_norm + 1)
+
+invasive_log
+```
+
+# now look the expression difference between genes
+```{r}
+selected_genes <- c("SOX10","MITF","MLANA", "CDH1", "MKI67", "RPS6", "PMEL", "AXL", "NGFR")
+
+invasive_logT <- as.data.frame(t(invasive_log[selected_genes, ]))
+
+invasive_logT$sample_label <- rownames(invasive_logT)
+
+invasive_logT
+
+invasive_merged_log <- merge(invasive_pheno, invasive_logT, by = "sample_label")
+
+invasive_merged_log
+
+graphDF <- invasive_merged_log[, c("branch", selected_genes)]
+
+graphDF
+```
+
+```{r branch gene comparison, fig.width = 4, fig.height = 6}
+# Iterate through the columns and create boxplots and stripplots with p-value
+for (gene in selected_genes) {
+  
+  # calculate sample size per group (branch1 and 3)
+  n_branch1 <- sum(graphDF$branch == "branch1")
+  n_branch3 <- sum(graphDF$branch == "branch3")
+  
+   # Create the boxplot and stripplot for each column
+  p <- ggplot(graphDF, aes(x = branch, y = graphDF[[gene]], fill = branch)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +    # Boxplot without outliers
+    geom_jitter(shape = 16, position = position_jitter(0.2), size = 3) +  # Stripplot
+    scale_fill_manual(values = c("branch1" = "pink", "branch3" = "skyblue")) +  # Custom colors for branches
+    stat_compare_means(method = "wilcox.test", label = "p.format", label.y = max(graphDF[[gene]], na.rm = TRUE) * 1.05) +  # Add p-value
+    theme_minimal() +
+    labs(title = paste("Comparison of", gene, "\nbetween branch1 and branch3"),
+         y = paste("log-transformed", gene), x = "Branch") +
+    scale_x_discrete(labels = c(paste0("branch1\n(n=", n_branch1, ")"),
+                                paste0("branch3\n(n=", n_branch3, ")"))) +  # Add sample size to x-ticks
+    theme(legend.position = "none")  # Hide legend for fill
+
+  # Save the plot
+  print(p)
+  ggsave(filename = paste0("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/Branch_comparison_", gene, ".pdf"), plot = p, width = 4, height = 6)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# cytokine and chemokine reference
+# https://www.immport.org/shared/genelists
+```{r}
+setwd("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/")
+chemokines <- read.csv("signatures/Chemokines.txt", sep = "\t")
+cytokines <- read.csv("signatures/Cytokines.txt", sep = "\t")
+chemokines_rep <- read.csv("signatures/Chemokine_Receptors.txt", sep = "\t")
+cytokines_rep <- read.csv("signatures/Cytokine_Receptors.txt", sep = "\t")
+interleukins <- read.csv("signatures/Interleukins.txt", sep = "\t")
+interleukin_rep <- read.csv("signatures/Interleukins_Receptors.txt", sep = "\t")
+APP <- read.csv("signatures/Antigen_Processing_and_Presentation.txt", sep = "\t")
+interferons <- read.csv("signatures/Interferons.txt", sep = "\t")
+TNF <- read.csv("signatures/TNF_Family_Members.txt", sep = "\t")
+TGF <- read.csv("signatures/TGF-b_Family_Members.txt", sep = "\t")
+
+```
+
+
+
+
+```{r}
+invasive_logT = as.data.frame(t(invasive_log))
+invasive_logT
+
+# Add sample_label column to invasive_logT
+invasive_logT$sample_label <- rownames(invasive_logT)
+
+# Merge both dataframes based on sample_label
+
+# Display the first few rows of the merged dataframe
+```
+
+```{r, fig.height= 6,fig.width = 4}
+library(ggpubr)
+combined_df <- merge(invasive_pheno, invasive_logT, by = "sample_label")
+
+# Calculate sample size for each branch
+sample_sizes <- combined_df %>%
+  group_by(branch) %>%
+  summarise(n = n()) %>%
+  mutate(branch_label = paste0(branch, " (n=", n, ")"))
+
+# Merge sample size labels into the dataset
+combined_df <- combined_df %>%
+  left_join(sample_sizes, by = "branch")
+
+# Create the boxplot with statistical test
+ggplot(combined_df, aes(x = branch_label, y = A2M, fill = branch)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +  # Boxplot with transparency
+  geom_jitter(width = 0.2, size = 2, alpha = 0.6) +  # Dots for individual points
+  stat_compare_means(method = "wilcox.test", label = "p.signif") +  # Wilcoxon test
+  theme_minimal() +
+  labs(title = "Comparison of A2M expression between Branch 1 and Branch 3",
+       x = "Branch",
+       y = "A2M Expression") +
+  scale_fill_manual(values = c("branch1" = "steelblue", "branch3" = "tomato")) +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+setwd("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/")
+
+generate_boxplot <- function(gene_list, combined_df, file_name, height = 6, width = 4, p_threshold = 0.05) {
+  # If the gene list contains two columns (Symbol and Synonyms), combine and extract unique genes
+  if ("Symbol" %in% colnames(gene_list) & "Synonyms" %in% colnames(gene_list)) {
+    gene_list$combined <- paste(gene_list$Symbol, gene_list$Synonyms, sep = ", ")
+    gene_list$gene_set <- strsplit(gene_list$combined, ", ")
+    genes <- unique(unlist(gene_list$gene_set))
+  } else {
+    # If the gene list is a single column (e.g., cytokines)
+    genes <- unique(gene_list[[1]])  # Extract first column if it's a dataframe
+  }
+  
+  # Find common genes between gene list and column names of combined_df
+  common_genes <- intersect(colnames(combined_df), genes)
+  
+  significant_genes <- c()  # Store significant genes
+  
+  for (gene in common_genes) {
+    # Perform Wilcoxon test
+    p_value <- wilcox.test(combined_df[[gene]] ~ combined_df$branch)$p.value
+    
+    # Proceed only if the result is significant
+    if (p_value < p_threshold) {
+      significant_genes <- c(significant_genes, gene)  # Store significant gene
+      
+      # Create the boxplot
+      boxplot <- ggplot(combined_df, aes(x = branch, y = .data[[gene]], fill = branch)) +
+        geom_boxplot(alpha = 0.5, outlier.shape = NA) +  # Boxplot with transparency
+        geom_jitter(width = 0.2, size = 2, alpha = 0.6) +  # Dots for individual points
+        stat_compare_means(method = "wilcox.test", label = "p.signif") +  # Wilcoxon test
+        theme_minimal() +
+        labs(title = paste(gene, "expression Branch 1 vs Branch 3"),
+             x = "Branch",
+             y = paste(gene, "Expression")) +
+        scale_fill_manual(values = c("branch1" = "steelblue", "branch3" = "tomato")) +
+        theme(legend.position = "none")
+      
+      # Save the boxplot as a PDF
+      ggsave(paste0(file_name, "_", gene, ".pdf"), plot = boxplot, width = width, height = height, device = "pdf", dpi = 300)
+      
+      # Also display the boxplot
+      print(boxplot)
+    }
+  }
+  
+  # Return significant genes
+  return(significant_genes)
+}
+
+#generate_boxplot(chemokines, combined_df, "chemokines")
+generate_boxplot(cytokines, combined_df, "cytokines")
+
+```
+
+
+```{r}
+generate_boxplot(cytokines_rep, combined_df, "cytokines_rep")
+generate_boxplot(chemokines_rep, combined_df, "chemokines_rep")
+generate_boxplot(interleukins, combined_df, "interleukins")
+generate_boxplot(interleukin_rep, combined_df, "interleukin_rep")
+generate_boxplot(APP, combined_df, "APP")
+generate_boxplot(interferons, combined_df, "interferons")
+generate_boxplot(TNF, combined_df, "TNF")
+generate_boxplot(TGF, combined_df, "TGF")
+
+
+```
+
+
+```{r}
+chemokines_rep <- read.csv("signatures/Chemokine_Receptors.txt", sep = "\t")
+cytokines_rep <- read.csv("signatures/Cytokine_Receptors.txt", sep = "\t")
+interleukins <- read.csv("signatures/Interleukins.txt", sep = "\t")
+interleukin_rep <- read.csv("signatures/Interleukins_Receptors.txt", sep = "\t")
+APP <- read.csv("signatures/Antigen_Processing_and_Presentation.txt", sep = "\t")
+interferons <- read.csv("signatures/Interferons.txt", sep = "\t")
+TNF <- read.csv("signatures/TNF_Family_Members.txt", sep = "\t")
+TGF <- read.csv("signatures/TGF-b_Family_Members.txt", sep = "\t")
+
+```
+
+
+
+
+
+# create a function to generate this plot
+```{r}
+setwd("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/")
+
+# Define a function to generate heatmaps for gene sets with scaling and sample selection options
+generate_heatmap <- function(gene_list, invasive_log, invasive_pheno, heatmap_title, file_name, do_scale = TRUE, n_samples = NULL, height = 10, width = 10) {
+  
+  # If the gene list contains two columns (Symbol and Synonyms), combine and extract unique genes
+  if ("Symbol" %in% colnames(gene_list) & "Synonyms" %in% colnames(gene_list)) {
+    gene_list$combined <- paste(gene_list$Symbol, gene_list$Synonyms, sep = ", ")
+    gene_list$gene_set <- strsplit(gene_list$combined, ", ")
+    genes <- unique(unlist(gene_list$gene_set, ", "))
+  } else {
+    # If the gene list is a single column (e.g., cytokines)
+    genes <- unique(gene_list)
+  }
+  
+  # Find common genes between gene list and the rownames of invasive_log
+  common_genes <- intersect(rownames(invasive_log), genes)
+  
+  # Subset the data
+  gene_log <- invasive_log[c(common_genes, "MLANA"), ]
+  gene_log_sorted <- gene_log[, order(gene_log["MLANA", ])]
+  
+  # If `n_samples` is specified, select the top and bottom n_samples based on MLANA expression
+  if (!is.null(n_samples)) {
+    top_n_samples <- colnames(gene_log_sorted)[1:n_samples]
+    bottom_n_samples <- colnames(gene_log_sorted)[(ncol(gene_log_sorted) - n_samples + 1):ncol(gene_log_sorted)]
+    selected_samples <- c(top_n_samples, bottom_n_samples)
+    gene_log_sorted <- gene_log_sorted[, selected_samples]  # Subset to top and bottom samples
+  }
+  
+  # Subset gene expression matrix (without MLANA) and extract MLANA values for the barplot
+  gene_heatmap <- gene_log_sorted[common_genes, ]
+  mlana_expression <- gene_log_sorted["MLANA", ]
+  
+  # Check if we should scale the data or not
+  if (do_scale) {
+    # Rescale data by rows (genes) using Z-score normalization (row-wise scaling)
+    gene_heatmap_scaled <- t(apply(gene_heatmap, 1, scale))
+  } else {
+    # No scaling, use the raw data
+    gene_heatmap_scaled <- gene_heatmap
+  }
+  
+  # Perform hierarchical clustering on rows and apply optimal leaf ordering (OLO)
+  dist_rows <- dist(gene_heatmap_scaled)
+  hc_rows <- hclust(dist_rows)
+  dend <- as.dendrogram(hc_rows)
+  row_order <- seriate(dist_rows, method = "OLO")  # Apply OLO
+  ordered_dend <- rotate(dend, get_order(row_order))  # Reorder dendrogram with OLO using `rotate()`
+  
+  # Sort annotations based on the columns of gene_log_sorted
+  annotation_df_sorted <- invasive_pheno[colnames(gene_log_sorted), ]
+  
+  # Create the top annotation with MLANA, histopathology, and branch
+  top_annotation <- HeatmapAnnotation(
+    bar = anno_barplot(mlana_expression, border = FALSE, gp = gpar(fill = "white")),
+    histopathology = annotation_df_sorted$histopathology, # Add histopathology annotation
+    branch = annotation_df_sorted$branch,                 # Add branch annotation
+    annotation_name_side = "left",
+    col = list(
+      histopathology = c("VGP" = "red", "RGP" = "orange"),  # Customize colors for histopathology
+      branch = c("branch1" = "forestgreen", "branch3" = "purple")  # Customize colors for branch
+    )
+  )
+  
+  # Generate the heatmap with clustering of rows and ordered columns based on MLANA
+  heatmap <- Heatmap(
+    as.matrix(gene_heatmap_scaled), 
+    name = "Expression", 
+    top_annotation = top_annotation, 
+    cluster_rows = ordered_dend, 
+    cluster_columns = FALSE,  # Don't cluster columns, they are already ordered by MLANA
+    show_column_names = FALSE, 
+    show_row_names = TRUE, 
+    column_title = heatmap_title,
+    heatmap_legend_param = list(title = "Expression Level"),
+    border = TRUE,
+    rect_gp = gpar(col = "grey") # Add grey borders around each box
+  )
+  
+  # Capture the ComplexHeatmap plot as a grid object
+  heatmap_grob <- grid.grabExpr(draw(heatmap))
+  
+  # Save the heatmap using ggsave (needs conversion to a grid object)
+  ggsave(file_name, plot = heatmap_grob, width = width, height = height, device = "pdf", dpi = 300)
+  
+  # Also display the heatmap in the R environment
+  draw(heatmap)
+}
+
+# Apply the function to different gene lists
+# Use `do_scale = TRUE` for scaling, `do_scale = FALSE` if you don't want scaling
+# The `n_samples = 10` ensures we select the top 10 and bottom 10 samples, use `n_samples = NULL` to use all samples
+generate_heatmap(chemokines, invasive_log, invasive_pheno, "Chemokines Expression Heatmap", "figures/Chemokines_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 10, width = 8)
+generate_heatmap(cytokines, invasive_log, invasive_pheno, "Cytokines Expression Heatmap", "figures/Cytokines_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 25, width = 8)
+generate_heatmap(chemokines_rep, invasive_log, invasive_pheno, "Chemokine Receptors Expression Heatmap", "figures/Chemokine_Receptors_Expression_Heatmap_top10.pdf", do_scale = T, n_samples = 10,  height = 10, width = 8) # Use all samples
+generate_heatmap(cytokines_rep, invasive_log, invasive_pheno, "Cytokine Receptors Expression Heatmap", "figures/Cytokine_Receptors_Expression_Heatmap_top10.pdf", do_scale = T, n_samples = 10, height = 25, width = 8)  # Use all samples, without scaling
+generate_heatmap(interleukins, invasive_log, invasive_pheno, "Interleukins Expression Heatmap", "figures/Interleukins_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 10, width = 8)
+
+generate_heatmap(interleukin_rep, invasive_log, invasive_pheno, "Interleukins Expression Heatmap", "figures/Interleukins_Receptors_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 10, width = 8)
+
+generate_heatmap(APP, invasive_log, invasive_pheno, "Antigen Presentation Expression Heatmap", "figures/Antigen_Presentation_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 20, width = 8)
+
+generate_heatmap(interferons, invasive_log, invasive_pheno, "Interferons Expression Heatmap", "figures/Interferons_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 4, width = 8)
+
+generate_heatmap(TNF, invasive_log, invasive_pheno, "TNF-Alpha Expression Heatmap", "figures/TNF_alpha_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 10, width = 8)
+
+generate_heatmap(TGF, invasive_log, invasive_pheno, "TGF-Beta Expression Heatmap", "figures/TGF_Beta_Expression_Heatmap_top10.pdf", do_scale = TRUE, n_samples = 10, height = 10, width = 8)
+```
+
+# check the batch2 normal vs MIS
+```{r}
+b2_pheno_merged
+# set the comprison group
+comp1 <- c("N", "P")
+b2_comp1_pheno <- b2_pheno_merged[b2_pheno_merged$histopathology %in% comp1, ]
+
+table(b2_comp1_pheno$histopathology)
+
+# now subset the rawcount
+comp1_raw <- tumor_raw_count_b2[, rownames(b2_comp1_pheno)]
+
+b2_comp1_pheno <- b2_comp1_pheno[match(colnames(comp1_raw), rownames(b2_comp1_pheno)), ]
+
+all(colnames(comp1_raw) == rownames(b2_comp1_pheno))  # Should return TRUE
+
+# now creating DEG object 
+comp1_dds <-  DESeqDataSetFromMatrix(countData = round(comp1_raw),
+                                 colData = b2_comp1_pheno,
+                                 design = ~ histopathology)
+
+comp1_dds <- DESeq(comp1_dds)
+
+comp1_vsd <- vst(comp1_dds, blind = FALSE)
+# comparison
+comp1_res <- results(comp1_dds, contrast = c("histopathology", "N", "P"))
+comp1_res <- comp1_res[order(comp1_res$padj), ]
+#comp1_significant_genes <- rownames(comp1_res[which(comp1_res$padj <= 0.05) & comp1_res[which(comp1_res$log2FoldChange >= 1.5), ])
+
+```
+
+
+```{r, fig.height= 8, fig.width = 10}
+library(EnhancedVolcano)
+
+# Specify the filename for the SVG file
+output_filename <- "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/B2_NvsP_DGEplot.pdf"
+ 
+# Start SVG device
+pdf(output_filename, width = 7, height = 8) # Set appropriate width and height
+
+EnhancedVolcano(comp1_res,
+    lab = rownames(comp1_res),
+    title = 'Normal vs Precusor',
+    #selectLab = c('PMEL','CDK2', 
+     #             "CDHR1", "CDH1", "ITGA4"),
+    x = 'log2FoldChange',
+    y = 'pvalue',
+    labSize = 5.0, 
+    pointSize = 3.0, 
+    FCcutoff = 1,
+    pCutoff = 0.05,
+    subtitle = bquote('FDR cut off 0.001 and absolute LFC cut off 1'))
+
+dev.off()
+```
+
+# check the expression of MART1 in the invasive region
+
+# read the stage 2 data
+```{r}
+stage2_tumor_pheno <- read.csv("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/stageII_tumor_GeoMX_cluster_with_ROIs.csv")
+table(stage2_tumor_pheno$cluster)
+rownames(stage2_tumor_pheno) <- stage2_tumor_pheno$X
+stage2_tumor_pheno$X <- NULL
+stage2_tumor_pheno
+
+# Assuming xy_locations is your data frame
+ggplot(stage2_tumor_pheno, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "PC1",
+       y = "PC2") +
+  #scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  #scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+# now export the raw data
+stage2_rawcount <- read.csv("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/processed_data/PCAII_merged_raw_05212024.csv")
+rownames(stage2_rawcount) <- stage2_rawcount$X
+stage2_rawcount$X <- NULL
+
+# Replace periods with dashes except before ".dcc"
+colnames(stage2_rawcount) <- gsub("\\.(?=.*\\.dcc)", "-", colnames(stage2_rawcount), perl = TRUE)
+
+stage2_tumor_rawcount <- stage2_rawcount[, rownames(stage2_tumor_pheno)]
+stage2_tumor_rawcount
+```
+
+
+```{r}
+# now generate the dds object
+dds <- DESeqDataSetFromMatrix(countData = round(stage2_tumor_rawcount),
+                              colData = stage2_tumor_pheno, 
+                              design = ~ cluster + batch)
+dds <- DESeq(dds)
+
+vsd <- vst(dds, blind = FALSE)
+
+```
+
+
+```{r}
+dds <- estimateSizeFactors(dds)
+
+norm_counts <- as.data.frame(counts(dds, normalized = TRUE))
+norm_counts_matrix <- as.matrix(norm_counts)
+
+#branch_gsva <- gsva(ssgseaParam(norm_counts_matrix, gene_signatures), verbose = F)
+#branch_gsvaDF <- as.data.frame(branch_gsva)
+
+```
+# plot the HE result into PCA plot
+
+```{r}
+stage2_gsva <- gsva(ssgseaParam(norm_counts_matrix, selected_genes_converted_symbols), verbose = F)
+
+stage2_gsvaDF <- as.data.frame(t(stage2_gsva))
+
+stage2_gsvaDF
+
+stage2_gsz <- as.data.frame(scale(stage2_gsvaDF))
+
+```
+```{r}
+stage2_tumor_pheno$cluster <- as.character(stage2_tumor_pheno$cluster)
+stage2_tumor_pheno
+```
+
+```{r figure 2, fig.height= 6, fig.width= 12}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+# Start SVG device
+pdf("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/stage2_signature_analysis_heatmap.pdf", width = 12, height = 6)
+
+cl_cb <- function(hcl, mat){
+    # Recalculate manhattan distances for reorder method
+    dists <- dist(stage2_gsz, method = "manhattan")
+
+    # Perform reordering according to OLO method
+    hclust_olo <- reorder(hcl, dists)
+    return(hclust_olo)
+}
+
+# Define the colors for each category
+hist_colors <- c(
+  "epithelioid" = "#FF6347",            # Red
+  "epithelioid_pleomorphism" = "#4682B4", # Blue
+  "epithelioid_rhabdoid" = "#32CD32",    # Green
+  "epithelioid_spindle" = "#FFD700",     # Yellow
+  "pleomorphism" = "#DA70D6",            # Orchid
+  "spindle" = "#8B4513",                 # SaddleBrown
+  "stroma" = "#2F4F4F"                   # DarkSlateGray
+)
+
+# Define the colors for each cluster
+cluster_colors <- c(
+  "1" = "#FF6347",   # Red
+  "2" = "#4682B4",   # Blue
+  "3" = "#32CD32",   # Green
+  "4" = "#FFD700"    # Yellow
+)
+
+pheatmap(t(stage2_gsz),
+         scale = "row",
+         #border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 1,
+         treeheight_row = 15, 
+         treeheight_col = 25,
+         color = color_scale, 
+         breaks = breaks_list, 
+         cluster_cols = TRUE, 
+         cluster_rows = FALSE,
+         clustering_callback = cl_cb,
+         annotation_col= stage2_tumor_pheno[, c("combined_hist","cluster")],
+         annotation_colors = list(combined_hist = hist_colors,
+                                  cluster = cluster_colors), 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T,
+         annotation_legend = TRUE)
+
+
+# Manually render the heatmap using grid.draw
+#grid::grid.draw(pheatmap_result$gtable)
+
+# Close the PDF device
+dev.off()
+```
+
+
+now ploting the batch1
+```{r}
+colnames(stage2_tumor_pheno)
+```
+
+
+
+
+
+
+```{r}
+uni_features <- read.csv("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/HE_analysis/uni_mass100k-for-tk.csv")
+
+uni_features[, c("patch.filename", "local.filepath", "slide", "histopathology", "umap.1", "umap.2","ROI.ID")]
+
+# columns to remove
+remove_cols <- c("patch.filename", "local.filepath", "slide", "histopathology", "umap.1", "umap.2","ROI.ID")
+
+rownames(uni_features) <-  uni_features$patch.filename
+
+uni_features_clean <- uni_features %>% 
+ select(-all_of(remove_cols))
+
+head(uni_features_clean)
+
+# now perform PCA analysis
+pca_result <- prcomp(uni_features_clean, scale. = TRUE)
+pca_result
+```
+# now plot the PCA result
+```{r}
+explained_variance <- summary(pca_result)$importance[2, 1:2]
+explained_variance
+
+percent_pc1 <- round(explained_variance[1] * 100, 2)
+percent_pc2 <- round(explained_variance[2] * 100, 2)
+
+# Create a dataframe for plotting PCA results
+pca_df <- as.data.frame(pca_result$x)
+
+# Plot PC1 vs PC2 with explained variance percentages
+# Make sure that the row names of 'uni_features' match the row names in 'pca_df'
+pca_df$histopathology <- uni_features$histopathology
+pca_df$slide <- uni_features$slide
+
+# Plot PC1 vs PC2, colored by 'histopathology'
+ggplot(pca_df, aes(x = PC1, y = PC2, color = slide)) +
+  geom_point(size = 1) +
+  labs(
+    x = paste0("PC1 (", round(summary(pca_result)$importance[2, 1] * 100, 2), "% variance)"),
+    y = paste0("PC2 (", round(summary(pca_result)$importance[2, 2] * 100, 2), "% variance)"),
+    title = "PCA Plot (Colored by Histopathology)"
+  ) +
+  theme_minimal() +
+  theme(legend.title = element_text(size = 12), legend.text = element_text(size = 10)) +
+  scale_color_brewer(palette = "Set1")  # You can choose a different color palette if preferred
+```
+
+```{r}
+library(plotly)
+# Create a 3D scatter plot with plotly
+p <- plot_ly(
+  data = pca_df,
+  x = ~PC1, y = ~PC2, z = ~PC3, 
+  color = ~slide, 
+  colors = "Set1",  # You can choose a different color palette if preferred
+  type = "scatter3d",
+  mode = "markers",
+  marker = list(size = 2)
+) %>%
+  layout(
+    title = "3D PCA Plot (Colored by Histopathology)",
+    scene = list(
+      xaxis = list(title = paste0("PC1 (", round(summary(pca_result)$importance[2, 1] * 100, 2), "% variance)")),
+      yaxis = list(title = paste0("PC2 (", round(summary(pca_result)$importance[2, 2] * 100, 2), "% variance)")),
+      zaxis = list(title = paste0("PC3 (", round(summary(pca_result)$importance[2, 3] * 100, 2), "% variance)"))
+    )
+  )
+p
+```
+
+```{r}
+pca_df <- as.data.frame(pca_result$x)
+
+# Select the top 30 PCs
+top_30_pcs <- pca_df[, 1:30]
+
+# Melt the PCA data for easier plotting
+pca_melted <- melt(top_30_pcs)
+
+# Plot the distribution of the top 30 principal components
+ggplot(pca_melted, aes(x = value)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+  facet_wrap(~ variable, scales = "free") +  # Create a separate histogram for each PC
+  labs(
+    title = "Distribution of Top 30 Principal Components",
+    x = "PC Value",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+# read the original annotation file
+```{r}
+# Get the explained variance percentages for each PC
+explained_variance <- summary(pca_result)$importance[2, ]
+
+# Create a dataframe for the top 30 PCs and their explained variance
+explained_variance_df <- data.frame(
+  PC = paste0("PC", 1:length(explained_variance)),
+  VarianceExplained = explained_variance * 100  # Convert to percentage
+)
+
+# Select the top 30 PCs
+top_30_variance <- explained_variance_df[1:30, ]
+
+# Plot the explained variance for the top 30 PCs
+ggplot(top_30_variance, aes(x = PC, y = VarianceExplained)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(
+    title = "Explained Variance of Top 30 Principal Components",
+    x = "Principal Component",
+    y = "Percentage of Variance Explained"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for readability
+```
+
+
+```{r, fig.height= 15, fig.width= 25}
+breaks_list <- seq(-2, 2, by = 0.05)
+print(length(breaks_list))
+color_scale <- colorRampPalette(c("navy", "white", "red"))(length(breaks_list))
+
+
+#output_filename <- paste0("/Users/yshi797/Desktop/PCA/PCAfigures_prep_TK/PCAIItumor_lineage_Invasive_heatmap_050924.pdf")
+# Start SVG device
+#pdf(output_filename, width = 50, height = 25) # Set appropriate width and height
+
+
+
+pheatmap_result <- pheatmap(branch_gsvaDF,
+         scale = "row",
+         border_color = "grey",
+         show_colnames = F,
+         cellheight = 10,
+         cellwidth = 3,
+         treeheight_row = 0.5, 
+         treeheight_col = 0.5,
+         color = color_scale, 
+         breaks = breaks_list, 
+         annotation_col= stage2_tumor_pheno[, c(#"localization", 
+                                     "histopathology", 
+                                     #"MISvsInvasive", "Immune_TV", 
+                                     "slide_name", "cluster")],
+         #annotation_colors = list(histopathology = custom_colors, 
+          #                        case = mel_colors),
+         fontsize = 12,         # General font size
+         fontsize_row = 10,     # Font size for row names
+         fontsize_col = 10,   
+         legend = T)
+#dev.off()
+print(pheatmap_result)
+
+
+```
+
+```{r}
+branch_gsvaDFt <- as.data.frame(t(branch_gsvaDF))
+branch_gsvaDFt["sample"] <- rownames(branch_gsvaDFt)
+branch_gsvaDFt
+
+stage2_tumor_pheno["sample"] <- rownames(stage2_tumor_pheno)
+
+merged_data <- merge(branch_gsvaDFt, stage2_tumor_pheno, by = "sample")
+
+merged_data
+```
+
+```{r}
+merged_data$cluster <- as.character(merged_data$cluster)
+merged_data$BRANCH1_SIGNATURE <- as.numeric(merged_data$BRANCH1_SIGNATURE)
+merged_data$BRANCH3_SIGNATURE <- as.numeric(merged_data$BRANCH3_SIGNATURE)
+
+
+summary(merged_data$cluster)
+summary(merged_data$BRANCH1_SIGNATURE)
+```
+
+
+```{r comparison, fig.height= 6, fig.width= 8}
+ggbetweenstats(data = merged_data,
+               x = cluster,
+               y = BRANCH1_SIGNATURE,
+               messages = F,
+               bf.message = F,
+               mean.size = 2,
+               mean.color = "black",
+               ylab = "branch1 signature",
+               pairwise.comparisons = FALSE,
+               results.subtile = F,
+               centrality.label.args = list(size = 4),
+               ggsignif.args = list(textsize = 4, tip_length = 0.01)) + 
+                theme(axis.title.y.right = element_blank(), 
+                          axis.text.y.right = element_blank(), 
+                          axis.ticks.y.right = element_blank(),
+                          text = element_text(size = 12),       # Increase overall font size
+                          axis.title = element_text(size = 12), # Increase axis titles font size
+                          axis.text = element_text(size = 12))
+                          #geom_signif(comparisons = list(c("Tumor", "Immune")), test.args = list(exact = FALSE)    
+```
+
+```{r branch3, fig.height= 6, fig.width= 8}
+ggbetweenstats(data = merged_data,
+               x = cluster,
+               y = BRANCH3_SIGNATURE,
+               messages = F,
+               bf.message = F,
+               mean.size = 2,
+               mean.color = "black",
+               ylab = "branch1 signature",
+               pairwise.comparisons = FALSE,
+               results.subtile = F,
+               centrality.label.args = list(size = 4),
+               ggsignif.args = list(textsize = 4, tip_length = 0.01)) + 
+                theme(axis.title.y.right = element_blank(), 
+                          axis.text.y.right = element_blank(), 
+                          axis.ticks.y.right = element_blank(),
+                          text = element_text(size = 12),       # Increase overall font size
+                          axis.title = element_text(size = 12), # Increase axis titles font size
+                          axis.text = element_text(size = 12))
+                          #geom_signif(comparisons = list(c("Tumor", "Immune")), test.args = list(exact = FALSE)    
+```
+
+```{r}
+# Assuming xy_locations is your data frame
+ggplot(merged_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "PCA - Sample Locations",
+       x = "PC1",
+       y = "PC2") +
+  #scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  #scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+ggplot(merged_data, aes(x = PC1, y = PC2, color = histopathology)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "PCA - Sample Locations",
+       x = "PC1",
+       y = "PC2") +
+  #scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  #scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+```
+
+#load ovexpression spot, in total there are 11 overexpression spots
+```{r}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(msigdbr)
+library(ReactomePA)
+library(DOSE)
+
+# List of spots (A to Q)
+spots <- LETTERS[1:17]  # Generates letters from A to Q
+
+# Directory paths
+base_dir <- "PCAI_batch2_tumor_30x30_09082024_Results/CSV Sheets/Spot Lists/"
+
+# Get Hallmark gene sets from MSigDB
+hallmark_gene_sets <- msigdbr(species = "Homo sapiens", category = "H")
+
+for (spot in spots) {
+  # Read the CSV file for the current spot
+  file_path <- paste0(base_dir, "Overexpression Spots ", spot, ".csv")
+  spot_data <- read.csv(file_path)
+  spot_genelist <- spot_data$X
+  
+  # Convert gene symbols to Entrez IDs
+  entrez_ids <- bitr(spot_genelist, fromType = "SYMBOL", 
+                     toType = "ENTREZID", OrgDb = org.Hs.eg.db)$ENTREZID
+  
+  # Check if entrez_ids is not empty
+  if (length(entrez_ids) > 0) {
+    
+    ## 1. Perform GO enrichment analysis
+    go_enrichment <- enrichGO(gene = entrez_ids, OrgDb = org.Hs.eg.db,
+                              ont = "BP", pAdjustMethod = "BH", pvalueCutoff = 0.05)
+    
+    if (!is.null(go_enrichment) && nrow(go_enrichment) > 0) {
+      go_plot <- dotplot(go_enrichment) + ggtitle(paste0("GO Biological Process Enrichment \n Spot ", spot, " vs others"))
+      ggsave(paste0("Plots/GO_Enrichment_Spot_", spot, ".pdf"), plot = go_plot, width = 5, height = 6, dpi = 300)
+    }
+    
+    ## 2. Perform KEGG enrichment analysis
+    kegg_enrichment <- enrichKEGG(gene = entrez_ids, organism = "hsa",
+                                  pAdjustMethod = "BH", pvalueCutoff = 0.05)
+    
+    if (!is.null(kegg_enrichment) && nrow(kegg_enrichment) > 0) {
+      kegg_plot <- dotplot(kegg_enrichment) + ggtitle(paste0("KEGG Pathway Enrichment \n Spot ", spot, " vs others"))
+      ggsave(paste0("Plots/KEGG_Enrichment_Spot_", spot, ".pdf"), plot = kegg_plot, width = 5, height = 6, dpi = 300)
+    }
+    
+    ## 3. Perform Hallmark enrichment analysis
+    hallmark_enrichment <- enricher(entrez_ids, TERM2GENE = hallmark_gene_sets[, c("gs_name", "entrez_gene")], 
+                                    pAdjustMethod = "BH", pvalueCutoff = 0.05)
+    
+    if (!is.null(hallmark_enrichment) && nrow(hallmark_enrichment) > 0) {
+      hallmark_plot <- dotplot(hallmark_enrichment) + ggtitle(paste0("Hallmark Gene Set Enrichment \n Spot ", spot, " vs others"))
+      ggsave(paste0("Plots/Hallmark_Enrichment_Spot_", spot, ".pdf"), plot = hallmark_plot, width = 5, height = 6, dpi = 300)
+    }
+    
+    ## 4. Perform Reactome enrichment analysis
+    reactome_enrichment <- enrichPathway(gene = entrez_ids, organism = "human", 
+                                         pAdjustMethod = "BH", pvalueCutoff = 0.05)
+    
+    if (!is.null(reactome_enrichment) && nrow(reactome_enrichment) > 0) {
+      reactome_plot <- dotplot(reactome_enrichment) + ggtitle(paste0("Reactome Pathway Enrichment \n Spot ", spot, " vs others"))
+      ggsave(paste0("Plots/Reactome_Enrichment_Spot_", spot, ".pdf"), plot = reactome_plot, width = 5, height = 6, dpi = 300)
+    }
+    
+    ## 5. Perform DisGeNET enrichment analysis
+    disgenet_enrichment <- enrichDGN(entrez_ids, pAdjustMethod = "BH", pvalueCutoff = 0.05)
+    
+    if (!is.null(disgenet_enrichment) && nrow(disgenet_enrichment) > 0) {
+      disgenet_plot <- dotplot(disgenet_enrichment) + ggtitle(paste0("DisGeNET Disease Enrichment \n Spot ", spot, " vs others"))
+      ggsave(paste0("Plots/DisGeNET_Enrichment_Spot_", spot, ".pdf"), plot = disgenet_plot, width = 5, height = 6, dpi = 300)
+    }
+    
+  } else {
+    message(paste0("No valid Entrez IDs for Spot ", spot))
+  }
+}
+
+```
+
+
+
+```{r}
+go_enrichment <- enricher(gene = significant_genes, TERM2GENE = TERM2GENE, 
+                          #pAdjustMethod = "BH", 
+                          pvalueCutoff = 0.05)
+
+dotplot(go_enrichment) + ggtitle("Hallmark Pathway Enrichment")
+```
+
+```{r plot the pathway enrichment, fig.height= 6, fig.width= 6}
+# Visualize GO enrichment results
+dotplot(go_enrichment) + ggtitle("GO Biological Process Enrichment \n branch1 vs branch3")
+
+# Visualize KEGG enrichment results
+dotplot(kegg_enrichment) + ggtitle("KEGG Pathway Enrichment \n branch1 vs branch3")
+```
+
+```{r prepare rank_list function}
+# formats the ranked list for the fgsea() function
+prepare_ranked_list <- function(ranked_list) { 
+  # if duplicate gene names present, average the values
+  if( sum(duplicated(ranked_list$Gene.name)) > 0) {
+    ranked_list <- aggregate(.~Gene.name, FUN = mean, data = ranked_list)
+    ranked_list <- ranked_list[order(ranked_list$log2FoldChange, decreasing = T),]
+  }
+  # omit rows with NA values
+  ranked_list <- na.omit(ranked_list)
+  # turn the dataframe into a named vector
+  ranked_list <- tibble::deframe(ranked_list)
+  ranked_list
+}
+```
+
+
+```{r}
+b2_pheno_merged
+```
+
+
+# show the invasive branch
+```{r, fig.height= 6, fig.width= 6.5}
+# Assuming xy_locations is your data frame
+branch_plot <- ggplot(b2_pheno_merged, aes(x = spanning_tree_x, y = spanning_tree_y, fill = branch)) +
+  geom_point(shape = 21, color = "black", size = 4, stroke = 1.2) +  # Points for each sample with black border
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "X Coordinate",
+       y = "Y Coordinate") +
+  scale_fill_manual(values = c("branch1" = "tomato", "branch2" = "steelblue", "branch3" = "orange", "others" = "grey")) +  # Ensure "others" matches the case
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch_plots.pdf", 
+       plot = branch_plot, width = 6.5, height = 6 , units = "in", device = "pdf", dpi = 300)
+```
+
+
+```{r, fig.height= 8, fig.width = 10}
+library(EnhancedVolcano)
+
+# Specify the filename for the SVG file
+output_filename <- "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch_DGEplot.pdf"
+ 
+# Start SVG device
+pdf(output_filename, width = 7, height = 8) # Set appropriate width and height
+
+EnhancedVolcano(res,
+    lab = rownames(res),
+    selectLab = c("PCSK2", "CCL18", "TIMP1", "PRRX1", "S100A4", "S100B", "MPZ", 
+                  #"CTSB", 
+                  "A2M", "CXCL9", "HLA-A", "HLA-B", "HLA-C", "HLA-DR"),
+    title = 'branch1 vs branch3',
+    x = 'log2FoldChange',
+    y = 'pvalue',
+    labSize = 5.0, 
+    pointSize = 3.0, 
+    FCcutoff = 1.5,
+    pCutoff = 0.001,
+    subtitle = bquote('FDR cut off 0.001 and absolute LFC cut off 1'))
+
+dev.off()
+```
+#generate heatmap for top and bottom 20 genes 
+```{r}
+resDF <- as.data.frame(res)
+
+sig_res <- resDF %>% 
+  filter(!is.na(padj)) %>% 
+  filter(padj <= 0.05) %>% 
+  arrange(desc(log2FoldChange))
+  
+sig_res
+
+up_genes <- rownames(sig_res)[1:20]
+dn_genes <- rownames(tail(sig_res, 20))
+up_genes
+```
+```{r}
+# now create dds project
+b2_invasive_norm <- counts(invasive_dds, normalize = T)
+b2_invasive_log <- log2(b2_invasive_norm + 1)
+```
+
+
+
+```{r show heatmap of the genes to make sure the order is right, fig.height= 12, fig.width = 10}
+GOI <- c(up_genes, dn_genes)
+
+#output_filename <- "/Users/yshi797/Desktop/PCA/PCAfigures_prep/morphology_DGEheatmap.pdf"
+#pdf(output_filename, width = 4, height = 8) # Set appropriate width and height
+pheatmap(b2_invasive_log[GOI, ], 
+         scale = "row", 
+         show_rownames = T, show_colnames = F, 
+         cellheight = 12,
+         cellwidth =3.5,
+         #border_color = "black",
+         treeheight_row = 1,
+         treeheight_col = 1,
+         cluster_rows = T,
+         breaks = seq(-3, 3, 0.05),
+         color = colorRampPalette(c("blue", "white", "red"))(120),
+         annotation_col = invasive_pheno[, c("branch", "localization", "case")]) 
+        # annotation_colors = list(case = anno_colors,
+         #                         localization = loc_colors,
+          #                        condition = condition_colors),
+
+
+```
+
+```{r}
+b2_invasive_log_matrix <-  as.matrix(b2_invasive_log)
+overall_gsva <- as.data.frame(t(gsva(ssgseaParam(b2_invasive_log_matrix, Overall_geneSig), verbose = F)))
+overall_gsva <- overall_gsva %>% 
+  rename(G1S = "CELL.CYCLE..G1.S", G2M = "CELL.CYCLE..G2.M")
+
+```
+```{r}
+invasive_pheno_sig <- cbind(invasive_pheno, overall_gsva)
+colnames(invasive_pheno_sig)
+```
+
+
+```{r genomic feature comparison, fig.height= 4, fig.width= 3.5}
+set.seed(123)
+emt_con <- ggbetweenstats(data = invasive_pheno_sig,
+               x = branch,
+               y = HALLMARK_G2M_CHECKPOINT,
+               messages = F,
+               bf.message = F,
+               mean.size = 2,
+               mean.color = "black",
+               ylab = "HALLMARK_G2M_CHECKPOINT",
+               pairwise.comparisons = FALSE,
+               results.subtile = F,
+               centrality.label.args = list(size = 4),
+               ggsignif.args = list(textsize = 4, tip_length = 0.01)) + 
+                theme(axis.title.y.right = element_blank(), 
+                          axis.text.y.right = element_blank(), 
+                          axis.ticks.y.right = element_blank(),
+                          text = element_text(size = 12),       # Increase overall font size
+                          axis.title = element_text(size = 12), # Increase axis titles font size
+                          axis.text = element_text(size = 12))
+
+print(emt_con)
+
+```
+```{r}
+# Define the directory to save the plots
+save_dir <- "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/"
+
+# Get the list of selected columns
+selected_cols <- colnames(overall_gsva)
+
+# Function to generate and save the plot for each column
+generate_and_save_plot <- function(col_name, data, save_dir) {
+  
+  # Create the plot
+  p <- ggbetweenstats(
+    data = invasive_pheno_sig,
+    x = branch,
+    y = !!sym(col_name),  # Dynamically reference the column name
+    messages = F,
+    bf.message = F,
+    mean.size = 2,
+    mean.color = "black",
+    ylab = col_name,  # Use the column name as y-label
+    pairwise.comparisons = FALSE,
+    results.subtitle = F,
+    centrality.label.args = list(size = 4),
+    ggsignif.args = list(textsize = 4, tip_length = 0.01)
+  ) + 
+    theme(
+      axis.title.y.right = element_blank(), 
+      axis.text.y.right = element_blank(), 
+      axis.ticks.y.right = element_blank(),
+      text = element_text(size = 12),       # Increase overall font size
+      axis.title = element_text(size = 12), # Increase axis titles font size
+      axis.text = element_text(size = 12)
+    )
+  
+  # Define the file name
+  file_name <- paste0(save_dir, col_name, ".pdf")
+  
+  # Save the plot
+  ggsave(file_name, plot = p, width = 3.5, height = 4, units = "in", dpi = 300)
+}
+
+# Iterate through all selected columns, generate plots, and save
+purrr::walk(selected_cols, ~generate_and_save_plot(.x, invasive_pheno_sig, save_dir))
+```
+
+
+
+
+
+# now try hallmark pathways
+```{r hallmark, fig.height = 4, fig.width = 8}
+library(stringr)
+library(fgsea)
+# need to do a filterating step before ranking
+rank_res <- as.data.frame(res[order(res$log2FoldChange, decreasing=TRUE ), ])
+rank_list <- rank_res[c("log2FoldChange")]
+
+rank_list["Gene.name"] <- rownames(rank_list)
+rank_list <- rank_list[c("Gene.name", "log2FoldChange")]
+
+#filtered_rank_list <- na.omit(rank_list)
+
+ranked_list <- prepare_ranked_list(rank_list)
+head(ranked_list)
+
+# generate GSEA results table using fgsea() by inputting the pathway list and ranked list
+fgsea_results <- fgsea(pathways = hallmark_pathway_geneSigList,
+                  stats = ranked_list,
+                  minSize = 15,
+                  maxSize = 500,
+                  nperm= 1000)
+
+fgsea_results %>% arrange (desc(NES)) %>% dplyr::select (pathway, padj, NES) %>% head()
+
+waterfall_plot <- function(fgsea_results, graph_title, file_name) {
+  plot <- fgsea_results %>%
+    # filter(padj <= 0.05) %>% 
+    # Remove 'HALLMARK_' prefix from the pathway title
+    mutate(pathway = str_replace(pathway, "HALLMARK_", "")) %>%
+    ggplot(aes(reorder(pathway, NES), NES)) +
+      geom_bar(stat= "identity", aes(fill = padj <=  0.05), color = "black") +
+      coord_flip() +
+      labs(x = "Hallmark pathway", y = "Normalized Enrichment Score", title = graph_title) +
+      scale_fill_manual(values = c("TRUE" = "steelblue", "FALSE" = "tomato")) +
+      theme_bw() +
+      theme(
+        axis.text.y = element_text(size = 14),  # Change y-axis text size
+        axis.text.x = element_text(size = 14),  # Change x-axis text size
+        axis.title.y = element_text(size = 14),  # Change y-axis title size
+        axis.title.x = element_text(size = 14),  # Change x-axis title size
+        plot.title = element_text(size = 16, hjust = 1)  # Change plot title size
+      )
+  
+  # Save the plot as an SVG file
+  ggsave(file_name, plot = plot, width = 9 , height = 10, units = "in", device = "pdf", dpi = 300)
+}
+
+plot <- waterfall_plot(fgsea_results, "Hallmark pathway altered \n branch1 vs branch3", "/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/waterfall_branch1vsbranch3.pdf")
+
+print(plot)
+```
+# generate the dotplot based on what we saw 
+
+```{r}
+selected_pathways <- c("HALLMARK_INTERFERON_ALPHA_RESPONSE", "HALLMARK_INTERFERON_GAMMA_RESPONSE", 
+                       "HALLMARK_ANGIOGENESIS", "HALLMARK_HYPOXIA", "HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION", "HALLMARK_G2M_CHECKPOINT", 
+                       "HALLMARK_TNFA_SIGNALING_VIA_NFKB", "HALLMARK_KRAS_SIGNALING_UP",
+                       "HALLMARK_MYC_TARGETS_V1", "HALLMARK_INFLAMMATORY_RESPONSE")
+
+
+# subset the data
+subfgsea_res <- fgsea_results[fgsea_results$pathway %in% selected_pathways, ]
+
+subfgsea_res$pathway <- gsub("HALLMARK_", "", subfgsea_res$pathway)
+
+res_dots <- ggplot(subfgsea_res, aes(x = NES, y = reorder(pathway, NES), size = size, fill = padj)) +
+  geom_point(shape = 21, color = "black", stroke = 1.5) +  # Adding black border
+  scale_fill_gradient(low = "red", high = "steelblue", name = "Adjusted p-value") +  # Color fill based on padj
+  scale_size_continuous(range = c(3, 10), name = "Gene set size") +
+  labs(title = "Hallpark Pathway Enrichment \n Branch1 vs Branch3", x = "Normalized Enrichment Score (NES)", y = "Pathway") +
+  theme_classic() + 
+  theme(
+    axis.text.y = element_text(size = 12),
+    axis.text.x = element_text(size = 12),
+    panel.grid.major.y = element_line(color = "grey", linetype = "dashed"),  # Add dashed grey grid lines on y-axis
+    panel.grid.major.x = element_line(color = "grey", linetype = "dashed")   # Add dashed grey grid lines on x-axis
+  )
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1vsbranch3_pathway_enrichment_dotplot.pdf", plot = res_dots, width = 8, height = 6, dpi = 300)
+
+```
+# now generate breslow fisherexact plot
+
+
+```{r breslow depth analysis}
+selected_columns <- c("Codename", "depth..mm.")
+breslow_anno <- read.csv("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/clinical_data/melanoma_transferred to LSP_3.0 09232022_DEIDENTIFIED_TV.csv")[, selected_columns]
+breslow_anno
+
+# Apply the function to create the new 'breslow_depth' column
+# Define the function to assign breslow categories
+breslow_anno$breslow_depth <- cut(
+  breslow_anno$depth..mm., 
+  breaks = c(-Inf, 1, 2, 4, Inf), 
+  labels = c("<1mm", "1-2mm", "2-4mm", "MIS_only")
+)
+
+breslow_anno$breslow_depth <- as.character(breslow_anno$breslow_depth)
+
+# View the result
+# Ensure both key columns (Codename in breslow_anno and case in df) have the same name
+names(breslow_anno)[names(breslow_anno) == "Codename"] <- "case"
+
+# Perform the left join to add breslow_depth to df
+merged_invasive_pheno <- invasive_pheno %>%
+  left_join(breslow_anno[, c("case", "breslow_depth")], by = "case")
+
+# manually assign MEL55
+merged_invasive_pheno[merged_invasive_pheno$case_block == "MEL55 A2", "breslow_depth"] = "2-4mm"
+
+# View the result
+print(merged_invasive_pheno[, c("case", "breslow_depth")])
+# subset <1mm and 1-2mm for fisther exact test
+comparison <- c("<1mm", "1-2mm")
+sub_breslow <- merged_invasive_pheno[merged_invasive_pheno$breslow_depth %in% comparison, c("case", "breslow_depth", "branch")]
+table(sub_breslow$branch)
+
+immune_pheno <-  merged_invasive_pheno[, c("case", "Immune_TV", "branch")]
+table(immune_pheno$branch)
+```
+
+```{r}
+
+write.csv(merged_invasive_pheno,
+          file = paste0("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/PCAII_project_manuscript_preparation_2025/processed_data/", "Figure_5G.csv"),
+          row.names = F)
+
+```
+
+
+```{r}
+table(immune_pheno$Immune_TV)
+
+# Create a contingency table
+contingency_table <- table(merged_invasive_pheno$branch, merged_invasive_pheno$Immune_TV)
+
+# Perform the Chi-squared test
+chi_square_test_result <- chisq.test(contingency_table)
+
+# View the result
+chi_square_test_result
+
+# Create a contingency table
+contingency_table <- table(merged_invasive_pheno$branch, merged_invasive_pheno$Immune_TV)
+
+# If small sample sizes, use Fisher's exact test
+fisher_test_result <- fisher.test(contingency_table)
+
+# View the result
+fisher_test_result
+
+p_value <- fisher_test_result$p.value
+
+df_percentage <- immune_pheno %>%
+  group_by(branch, Immune_TV) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+df_percentage
+ 
+
+immune_colors <- c("brisk TIL" = "red", "immune response" = "orange", "no immune" = "steelblue", "nonbrisk TIL" = "skyblue", "immune regression" = "darkblue")
+
+# Create the bar plot with borders, custom colors, and Fisher's test annotation
+immune_stackplot <- ggplot(df_percentage, aes(x = branch, y = percentage, fill = Immune_TV)) +
+  geom_bar(stat = "identity", position = "fill", width = 0.7, color = "black", size = 0.5) +  # Add black border to bars
+  scale_y_continuous(labels = scales::percent_format()) +  # Convert y-axis to percentage
+  scale_fill_manual(values = immune_colors) +  # Use custom colors for Breslow depth
+  labs(x = "Branch", y = "Percentage", fill = "Breslow Depth") +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        panel.grid.major.y = element_line(color = "grey", linetype = "dashed"),  # Add dashed grey grid lines on y-axis
+        panel.grid.major.x = element_line(color = "grey", linetype = "dashed")   # Add dashed grey grid lines on x-axis
+        ) +  # Add box around the plot
+  annotate("text", x = 1.5, y = 1.05, label = "****", size = 5, hjust = 0)  # Add p-value
+
+ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1vsbranch3_immune_stackplot.pdf", plot = immune_stackplot, width = 4, height = 4, dpi = 300)
+
+print(immune_stackplot)
+```
+```{r}
+table(df_percentage$Immune_TV)
+```
+
+
+```{r}
+write.csv(sub_breslow,
+          file = paste0("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/PCAII_project_manuscript_preparation_2025/processed_data/", "Figure_5E.csv"),
+          row.names = F)
+```
+
+
+
+```{r, fig.height= 4, fig.width=4}
+# Create a contingency table
+contingency_table <- table(sub_breslow$breslow_depth, sub_breslow$branch)
+
+# Perform chi-squared test
+chi_test <- chisq.test(contingency_table)
+print(chi_test)
+
+# If expected counts are low, use Fisher's exact test instead
+fisher_test <- fisher.test(contingency_table)
+print(fisher_test)
+
+p_value <- fisher_test$p.value
+
+df_percentage <- sub_breslow %>%
+  group_by(branch, breslow_depth) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Define custom colors for Breslow depth categories
+custom_colors <- c("<1mm" = "pink", "1-2mm" = "darkorange")
+
+# Create the bar plot with borders, custom colors, and Fisher's test annotation
+breslow_stackplot <- ggplot(df_percentage, aes(x = branch, y = percentage, fill = breslow_depth)) +
+  geom_bar(stat = "identity", position = "fill", width = 0.7, color = "black", size = 0.5) +  # Add black border to bars
+  scale_y_continuous(labels = scales::percent_format()) +  # Convert y-axis to percentage
+  scale_fill_manual(values = custom_colors) +  # Use custom colors for Breslow depth
+  labs(x = "Branch", y = "Percentage", fill = "Breslow Depth") +
+  theme_minimal() +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 1),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        panel.grid.major.y = element_line(color = "grey", linetype = "dashed"),  # Add dashed grey grid lines on y-axis
+        panel.grid.major.x = element_line(color = "grey", linetype = "dashed")   # Add dashed grey grid lines on x-axis
+        ) +  # Add box around the plot
+  annotate("text", x = 1.5, y = 1.05, label = "****", size = 5, hjust = 0)  # Add p-value
+
+#ggsave("/Users/yshi797/Partners HealthCare Dropbox/Yingxiao Shi/Dave Liu Lab/Yingxiao_Shi(TK)/Project3_PCA/figures/branch1vsbranch3_breslow_plot.pdf", plot = breslow_stackplot, width = 4, height = 4, dpi = 300)
+
+print(breslow_stackplot)
+
+```
+```{r}
+
+```
+
+
+
+now perform PCA analysis on batch2 invasive regions
+```{r}
+b2_invasive_pheno <- b2_pheno_merged[(b2_pheno_merged$histopathology %in% c("RGP", "VGP")) &
+                                       b2_pheno_merged$composition_TV %in% c("tumor", "melanocyte"),]
+
+table(b2_invasive_pheno$branch)
+b2_invasive_rawcount <- tumor_raw_count_b2[, rownames(b2_invasive_pheno)]
+b2_invasive_rawcount
+```
+
+
+
+# now perform dds and PCA
+```{r}
+b2_invasive_dds <- DESeqDataSetFromMatrix(countData = round(b2_invasive_rawcount), # data needs to have the same order
+                              colData = b2_invasive_pheno,
+                              design = ~ branch)
+
+
+b2_invasive_dds <- DESeq(b2_invasive_dds)
+b2_invasive_vsd <- vst(b2_invasive_dds, blind = TRUE)
+
+pcaData <- plotPCA(b2_invasive_vsd, intgroup = c("localization", "Immune_TV", "case", "branch"), returnData = T)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+```
+
+
+
+```{r, fig.height= 6, fig.width= 6}
+comb_p <- ggplot(pcaData, aes(PC1, PC2, fill=branch)) +
+  geom_point(shape = 21, size= 3, color = "black") +
+  labs(x = paste0("PC1: ",percentVar[1],"% variance"),
+       y = paste0("PC2: ",percentVar[2],"% variance"),
+       title = "PCA Plot colored by branch") +
+  #scale_fill_manual(values=custom_colors) +  # Add this line
+  #ggrepel::geom_text_repel(aes(label = case), 
+   #                        color = "black") +
+  theme(size = element_text(size = 10)) + 
+  theme_bw()
+
+#ggsave("PCA/PCAfigures_prep/mergedPCA_Immune_TV.png", height = 4, width = 4.5)
+print(comb_p)
+```
+
+```{r}
+b2_log
+```
+
+# read the HE annotation file
+```{r}
+selected_genes = c("IRF1","NGFR", "MLANA", "SOX9", "SOX10")
+
+irf1_exp <- as.data.frame(t(b2_invasive_log[selected_genes, ]))
+#irf1_exp <- irf1_exp %>% 
+ # rename(IRF1_log = `b2_log["IRF1", ]`)
+
+irf1_exp$sample_label <- rownames(irf1_exp)
+irf1_exp
+
+irf1_exp <- merge(b2_pheno_merged[, c("sample_label", "histopathology", "branch")], irf1_exp, by = "sample_label")
+irf1_exp_invasive <- irf1_exp[irf1_exp$branch %in% c("invasive_branch1", "invasive_branch3"), ]
+irf1_exp_invasive
+```
+
+
+```{r}
+
+library(ggplot2)
+library(ggsignif)
+library(ggpubr)
+# List of genes to compare
+genes <- c("IRF1", "NGFR", "MLANA", "SOX9", "SOX10")
+
+# Loop through each gene, generate the plot, and save as PDF
+for (gene in genes) {
+  # Create the plot
+  gene_plot <- ggplot(irf1_exp_invasive, aes_string(x = "branch", y = gene)) +
+    geom_boxplot(aes(fill = branch), outlier.shape = NA) +
+    geom_jitter(width = 0.2, size = 1, alpha = 0.6) +
+    theme_minimal() +
+    theme(
+      text = element_text(size = 16),   # Increase overall text size
+      axis.title = element_text(size = 16), # Increase axis titles font size
+      axis.text = element_text(size = 14)  # Increase axis text size
+    ) +
+    labs(y = paste(gene, "log"), x = "Branch") +
+    stat_compare_means(method = "wilcox.test", label = "p.signif", size = 6)  # Wilcoxon test with larger p-value labels
+  
+  # Save the plot as high-resolution PDF
+  ggsave(filename = paste0(gene, "_comparison.pdf"), plot = gene_plot, device = "pdf", height = 5, width = 5, dpi = 300)
+  print(gene_plot)
+}
+```
+
+
+
+```{r, brish match, fig.height= 6, fig.width= 8}
+# Assuming xy_locations is your data frame
+ggplot(b2_pheno_merged, aes(x = spanning_tree_x, y = spanning_tree_y, color = Immune_TV)) +
+  geom_point(size = 4) +  # Points for each sample
+  #geom_text(vjust = -0.5, hjust = 0.5, size = 3) +  # Labels for each point
+  theme_minimal() +
+  labs(title = "Correlation Spanning Tree - Sample Locations",
+       x = "X Coordinate",
+       y = "Y Coordinate") +
+  scale_x_continuous(breaks = seq(floor(min(xy_locations$x)), ceiling(max(xy_locations$x)), by = 0.5)) +
+  scale_y_continuous(breaks = seq(floor(min(xy_locations$y)), ceiling(max(xy_locations$y)), by = 0.5)) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+  )
+```
+
+
+
+
+
+
+
+
+
