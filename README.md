@@ -25,7 +25,7 @@ GENERAL INFORMATION
 +Co-Senior Authors: C.G.L., P.K.S.  
 ​  
 **Please cite this data as the following:**      
-Vallius, T. et al. (2025). Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma. {journal/biorxv}    
+Vallius, T. et al. (2025). Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma. biorxv  
 
 **Relevant links:** <remove links that are not relevant>  
 > * biorXv DOI: [https://doi.org/10.1101/2025.06.21.660851) 
