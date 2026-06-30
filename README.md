@@ -28,7 +28,7 @@ GENERAL INFORMATION
 Vallius, T. et al. (2025). Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma. {journal/biorxv}    
 
 **Relevant links:** <remove links that are not relevant>  
-> * Publication DOI: [https://doi.org/10.1101/2025.06.21.660851) 
+> * biorXv DOI: [https://doi.org/10.1101/2025.06.21.660851) 
 > * Associated GitHub Repository: [MY-REPO](https://github.com/labsyspharm/2025-Vallius-Shi-Novikov-melanoma-PCAII)  
 > * To view an archived record of this repository: [My-ZENODO-DOI](https://zenodo.org/doi/MY-ZENODO-DOI-URL) 
 > * To view the image data online, visit: [My-ATLAS-PAGE](https://tissue-atlas.org/MY-ATLAS-PAGE-URL)
