@@ -66,7 +66,7 @@ AWS BUCKET NAME
 If you experience issues accessing the above AWS S3 buckets, email tissue-atlas(at)hms.harvard.edu with the subject line "bucketname: Data Access".  
 
 ## GEO Data Access
-GeoMx gene expression data will be available via the Gene Expression Omnibus (GEO). 
+GeoMx gene expression data will be available via the Gene Expression Omnibus (GEO). GEO accession number: GSE327754.
 ​
 ## Other Data Access 
 All images will be available to explore online (via Minerva, no download required) at the Harvard Tissue Atlas (https://www.tissue-atlas.org/).  Selected CyCIF channels for specimen MEL14 can be explored via Minerva at {add link}.
