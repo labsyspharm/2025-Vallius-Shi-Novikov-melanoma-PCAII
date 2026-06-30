@@ -1,4 +1,4 @@
-# **Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma**
+# **SPATIAL DETERMINANTS OF TUMOR CELL DEDIFFERENTIATION AND PLASTICITY IN PRIMARY CUTANEOUS MELANOMA**
 ------------------ 
 TABLE OF CONTENTS
 ------------------
