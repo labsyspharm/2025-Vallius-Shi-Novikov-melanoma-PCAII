@@ -17,7 +17,7 @@ TABLE OF CONTENTS
 GENERAL INFORMATION
 --------------------
 ​
-**Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma** <Publication or Dataset Title>   
+**SPATIAL DETERMINANTS OF TUMOR CELL DEDIFFERENTIATION AND PLASTICITY IN PRIMARY CUTANEOUS MELANOMA** <Publication or Dataset Title>   
 -
 **Authors:** Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+.  
   
