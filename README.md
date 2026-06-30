@@ -1,4 +1,4 @@
-# **SPATIAL DETERMINANTS OF TUMOR CELL DEDIFFERENTIATION AND PLASTICITY IN PRIMARY CUTANEOUS MELANOMA**
+# **Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma**
 ------------------ 
 TABLE OF CONTENTS
 ------------------
@@ -17,7 +17,7 @@ TABLE OF CONTENTS
 GENERAL INFORMATION
 --------------------
 ​
-**SPATIAL DETERMINANTS OF TUMOR CELL DEDIFFERENTIATION AND PLASTICITY IN PRIMARY CUTANEOUS MELANOMA** <Publication or Dataset Title>   
+**Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma** <Publication or Dataset Title>   
 -
 **Authors:** Tuulia Vallius#, Yingxiao Shi#, Edward Novikov#, Shishir M Pant, Roxanne Pelletier, Yu-An Chen, Juliann B. Tefft, Ajit Nirmal Johnson, Zoltan Maliga, Guihong Wan, George Murphy, Sandro Santagata, Yevgeniy R Semenov, David Liu, Christine G Lian+, and Peter K Sorger+.  
   
@@ -25,10 +25,10 @@ GENERAL INFORMATION
 +Co-Senior Authors: C.G.L., P.K.S.  
 ​  
 **Please cite this data as the following:**      
-Vallius, T. et al. (2025). Quantifying the influence of spatial variation in the microenvironment on intra-tumoral heterogeneity in primary cutaneous melanoma. {journal/biorxv}    
+Vallius, T. et al. (2025). Spatial determinants of tumor cell dedifferentiation and plasticity in primary cutaneous melanoma. {journal/biorxv}    
 
 **Relevant links:** <remove links that are not relevant>  
-> * Publication DOI: [doi.org/MY-PAPER-DOI](https://doi.org/MY-PAPER-DOI-URL) 
+> * Publication DOI: [https://doi.org/10.1101/2025.06.21.660851) 
 > * Associated GitHub Repository: [MY-REPO](https://github.com/labsyspharm/2025-Vallius-Shi-Novikov-melanoma-PCAII)  
 > * To view an archived record of this repository: [My-ZENODO-DOI](https://zenodo.org/doi/MY-ZENODO-DOI-URL) 
 > * To view the image data online, visit: [My-ATLAS-PAGE](https://tissue-atlas.org/MY-ATLAS-PAGE-URL)
